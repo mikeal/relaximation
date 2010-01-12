@@ -72,7 +72,6 @@ OptionParser.prototype._rparse = function (help, i, args) {
     } else if (this.longCharMap[a] != undefined) {
       var handler = this.longCharMap[a];
       if (handler[0] != 'bool') {
-        var handler = this.longCharMap[a];
         var value = args[i + 1];
         i++; i++;
       } else {
@@ -84,7 +83,8 @@ OptionParser.prototype._rparse = function (help, i, args) {
         i++;
       }
     } else {
-      throw "Invalid Option: "+a;
+      sys.puts("Invalid Option: "+a);
+      process.exit(1);
     }
 
     if (handler[0] == "number") {

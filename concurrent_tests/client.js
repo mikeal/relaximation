@@ -1,6 +1,7 @@
 var http = require("http");
 var sys = require("sys");
 var posix = require("posix");
+var url = require("url");
 
 var clients = [];
 
@@ -20,7 +21,7 @@ var startClient = function (address, port, path, method, body, expectedStatus, h
     clients.push(h);
   }
   h._starttime = new Date();
-  var r = h.request(method, path, {"host":address, "content-type":"application/json"});
+  var r = h.request(method, path, {"host":address+":"+port, "content-type":"application/json"});
   r.sendBody(body, encoding="utf8");
   r.finish(function (response) {
     if (response.statusCode != expectedStatus) {
@@ -37,7 +38,7 @@ var startClient = function (address, port, path, method, body, expectedStatus, h
   })
 }
 
-var start = function (doc, i, limit) {
+var start = function (urlString, doc, i, limit) {
   // if (outputInterval) {
   //   setInterval(function () {
   //     var active = []
@@ -51,9 +52,10 @@ var start = function (doc, i, limit) {
   // }
   i++;
   if (i < limit) {
-    setTimeout(function () {start(doc, i, limit)}, 100)
+    setTimeout(function () {start(urlString, doc, i, limit)}, 100)
   }
-  startClient("localhost", 5984, '/testdb/', 'POST', doc, 201);
+  var u = url.parse(urlString)
+  startClient(u.hostname, parseInt(u.port), '/testdb/', 'POST', doc, 201);
 };
 
 var getMeantime = function () {
