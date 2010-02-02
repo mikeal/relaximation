@@ -22,8 +22,8 @@ var sum = function (values) {
   return rv;
 };
 
-posix.cat("large_doc.json").addCallback(function (doc) {
-  client.start(options.url, doc, 0, options.clients);
+posix.cat("small_doc.json").addCallback(function (doc) {
+  client.startWriteClients(options.url, doc, 0, options.clients);
   setInterval(function(){sys.puts(client.getMeantime())}, 1000)
 })
 

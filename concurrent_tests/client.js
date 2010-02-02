@@ -22,7 +22,9 @@ var startClient = function (address, port, path, method, body, expectedStatus, h
   }
   h._starttime = new Date();
   var r = h.request(method, path, {"host":address+":"+port, "content-type":"application/json"});
-  r.sendBody(body, encoding="utf8");
+  if (body) {
+    r.sendBody(body, encoding="utf8");
+  }
   r.finish(function (response) {
     if (response.statusCode != expectedStatus) {
       throw "Expected "+expectedStatus+" got "+response.statusCode;
@@ -38,25 +40,24 @@ var startClient = function (address, port, path, method, body, expectedStatus, h
   })
 }
 
-var start = function (urlString, doc, i, limit) {
-  // if (outputInterval) {
-  //   setInterval(function () {
-  //     var active = []
-  //     for (i in clients) {
-  //       if (clients[i].endtime) {
-  //         active.push(clients[i].endtime - clients[i].starttime)
-  //       }
-  //     }
-  //     sys.puts( active.length+" "+(sum(active) / active.length) / 1000)
-  //   }, outputInterval * 1000)
-  // }
+var startWriteClients = function (urlString, doc, i, limit) {
   i++;
   if (i < limit) {
-    setTimeout(function () {start(urlString, doc, i, limit)}, 100)
+    setTimeout(function () {startWriteClients(urlString, doc, i, limit)}, 100)
   }
   var u = url.parse(urlString)
   startClient(u.hostname, parseInt(u.port), '/testdb/', 'POST', doc, 201);
 };
+
+var startReadClients = function (urlString, id, i, limit) {
+  i++;
+  if (i < limit) {
+    setTimeout(function () {startReadClients(urlString, id, i, limit)}, 100)
+  }
+  var u = url.parse(urlString)
+  startClient(u.hostname, parseInt(u.port), '/'+id, 'GET', null, 201);
+};
+
 
 var getMeantime = function () {
   var active = []
@@ -68,7 +69,7 @@ var getMeantime = function () {
   return [active.length, (sum(active) / active.length) / 1000];
 }
 
-exports.start = start;
+exports.startWriteClients = startWriteClients;
 exports.getMeantime = getMeantime;
 
 
