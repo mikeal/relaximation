@@ -18,7 +18,7 @@ var subprocessCall = function(cmd, args, env, cwd, printBuffer) {
   child.addListener("error", function(data) {
     if (data) {
       buffer += data;
-      if (printBuffer) { sys.print(data);}
+      sys.print(data);
     }
   });
   var p = new events.Promise();
@@ -77,7 +77,7 @@ var open = function (file, mode, perm) {
 
 var write = function (file, data) {
   if (typeof(file) == "string") {
-    file = open(file, 'w');
+    fd = open(file, 'w');
   }
   posix.write(fd, data).wait();
 }
