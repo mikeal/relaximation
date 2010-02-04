@@ -37,6 +37,7 @@ var startClient = function (address, port, path, method, body, expectedStatus, h
       h.endtime = new Date();
       startClient(address, port, path, method, body, expectedStatus, h);
     })
+    response.addListener("close", function() {sys.puts('bad things!')})
   })
 }
 
@@ -46,7 +47,7 @@ var startWriteClients = function (urlString, doc, i, limit) {
     setTimeout(function () {startWriteClients(urlString, doc, i, limit)}, 100)
   }
   var u = url.parse(urlString)
-  startClient(u.hostname, parseInt(u.port), '/testdb/', 'POST', doc, 201);
+  startClient(u.hostname, parseInt(u.port), u.pathname, 'POST', doc, 201);
 };
 
 var startReadClients = function (urlString, id, i, limit) {

@@ -121,5 +121,9 @@ OptionParser.prototype.parse = function (help) {
   }
   return this.options;
 }
+OptionParser.prototype.ifScript = function (filename, callback, help) {
+  var op = this;
+  process.ARGV.forEach(function(a) {if (a == filename){ callback(op.parse(help))}});
+}
 
 exports.OptionParser = OptionParser;

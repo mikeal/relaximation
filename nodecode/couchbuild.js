@@ -1,9 +1,9 @@
 var sys = require('sys'),
-    os = require('./os'),
+    os = require('./common/os'),
     path = require('path'),
     assert = require('assert'),
     events = require('events'),
-    uuid = require('./uuid');
+    uuid = require('./common/uuid');
 
 var debugging = false;
     
