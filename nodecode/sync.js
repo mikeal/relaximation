@@ -37,6 +37,9 @@ var walk = function (pathname, callback) {
 }
 
 var updateAttachment = function (pathname, uri, rev) {
+  if (!rev) {
+    rev = latestrev;
+  }
   var p = new events.Promise();
   var uri = uri+'?rev='+rev
   posix.cat(pathname).addCallback(function(content) {
@@ -46,6 +49,7 @@ var updateAttachment = function (pathname, uri, rev) {
       if (status != 201) {
         p.emitError(status, headers, body, uri);
       } else {
+        latestrev = JSON.parse(body)['rev'];
         p.emitSuccess(status, headers, body, uri);
       }
     })
@@ -53,7 +57,9 @@ var updateAttachment = function (pathname, uri, rev) {
   return p;
 }
 
-var updateAttachments = function (rev) {
+latestrev = null
+
+var updateAttachments = function (rev, dev) {
   var files = [];
   walk('design', function(f){files.push(f)});
   var p = new events.Promise();
@@ -63,8 +69,14 @@ var updateAttachments = function (rev) {
     var uri = 'http://localhost:5984/results/_design/app/'+name
     updateAttachment(f, uri, rev)
       .addCallback(function (status, headers, body) {
-        process.watchFile(f, undefined, function() {}) 
-        
+        if (dev) {
+          var filename = f;
+          var douri = uri;
+          process.watchFile(filename, {persistent: true, interval: 100}, function() {
+            sys.puts("Update "+douri);
+            updateAttachment(filename, douri);
+            }) 
+        }
         if (files.length > 0) {
           dofile(JSON.parse(body)['rev']);
         } else {
@@ -84,11 +96,11 @@ var sync = function (dev) {
         var headers = {'content-type':'application/json'}
         http2.request('http://localhost:5984/results/', 'POST', headers, {'_id':'_design/app'})
           .addCallback(function(status, headers, body) {
-            updateAttachments(JSON.parse(body)['_rev']);
+            updateAttachments(JSON.parse(body)['_rev'], dev);
           })
       } else {
         var doc = JSON.parse(body);
-        updateAttachments(doc['_rev']);
+        updateAttachments(doc['_rev'], dev);
       }
     })
 }
