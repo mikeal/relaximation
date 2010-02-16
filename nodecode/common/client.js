@@ -51,27 +51,76 @@ var startWriteClients = function (urlString, doc, i, limit) {
 };
 
 var startReadClients = function (urlString, id, i, limit) {
-  i++;
-  if (i < limit) {
-    setTimeout(function () {startReadClients(urlString, id, i, limit)}, 100)
-  }
-  var u = url.parse(urlString)
-  startClient(u.hostname, parseInt(u.port), '/'+id, 'GET', null, 201);
+  
 };
 
-
-var getMeantime = function () {
+var Pool = function (limit) {
+  this.clients = [];
+  this.limit = limit;
+}
+Pool.prototype.doClient = function (address, port, path, method, body, expectedStatus, h) {
+  var p = this;
+  if (h == undefined) {
+     var h = http.createClient(port, address);
+     this.clients.push(h);
+   }
+   h._starttime = new Date();
+   var r = h.request(method, path, {"host":address+":"+port, "content-type":"application/json"});
+   if (body) {
+     r.sendBody(body, encoding="utf8");
+   }
+   r.finish(function (response) {
+     if (response.statusCode != expectedStatus) {
+       throw "Expected "+expectedStatus+" got "+response.statusCode;
+     }
+     if (response.httpVersion != '1.1') {
+       throw "Unexpected version.";
+     }
+     if (p.response_handler) {
+       var buffer = '';
+       response.addListener("body", function(chunk){buffer += chunk});
+     }
+     response.addListener("complete", function () {
+       h.starttime = h._starttime;
+       h.endtime = new Date();
+       if (p.response_handler) {
+         p.response_handler(JSON.parse(buffer))
+       }
+       p.doClient(address, port, path, method, body, expectedStatus, h);
+     })
+     response.addListener("close", function() {sys.puts('bad things!')})
+   }) 
+}
+Pool.prototype.getMeantime = function () {
   var active = []
-  for (i in clients) {
-    if (clients[i].endtime) {
-      active.push(clients[i].endtime - clients[i].starttime)
+  for (i in this.clients) {
+    if (this.clients[i].endtime) {
+      active.push(this.clients[i].endtime - this.clients[i].starttime)
     }
   }
   return [active.length, (sum(active) / active.length) / 1000];
 }
+Pool.prototype.start = function (urlString, method, body, expected_status, i) {
+  if (i == undefined) {  i = 0 }
+  i++;
+  var p = this;
+  if (i < this.limit) {
+    setTimeout(function () {p.start(urlString, method, body, expected_status, i)}, 100);
+  }
+  if (typeof(urlString) != "string") {
+    urlString = urlString();
+  }
+  var u = url.parse(urlString);
+  var pathname = u.pathname;
+  if (u.search) {
+    pathname += u.search;
+  }
+  this.doClient(u.hostname, parseInt(u.port), u.pathname, method, body, expected_status);
+}
+Pool.prototype.startWriters = function (urlString, doc) {
+  this.start(urlString, 'POST', doc, 201, 0);
+}
 
-exports.startWriteClients = startWriteClients;
-exports.getMeantime = getMeantime;
-
+exports.Pool = Pool;
 
 

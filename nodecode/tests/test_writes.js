@@ -38,10 +38,13 @@ var testWrites = function (url, clients, doc, duration) {
       posix.cat(path.join('..', 'common', doc+"_doc.json"))
         .addCallback(function (doc) {
             var starttime = new Date();
-            client.startWriteClients(url, doc, 0, clients);
+            
+            var pool = new client.Pool(clients);
+            pool.startWriters(url, doc)
             setInterval(function(){
-              var mn = client.getMeantime();
-              var r = {time:(new Date() - starttime) / 1000, clients:mn[0], averagetime:mn[1]};
+              var time = (new Date() - starttime) / 1000
+              var mn = pool.getMeantime();
+              var r = {time:time, clients:mn[0], averagetime:mn[1]};
               results.push(r);
               sys.puts(JSON.stringify(r));
             }, 1000);
