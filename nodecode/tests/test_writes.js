@@ -11,6 +11,7 @@ opts.addOption('-c', '--clients', "number", "clients", 100, "Number of concurren
 opts.addOption('-u', '--url', "string", "url", "http://localhost:5984", "CouchDB url to run tests against.");
 opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
 opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.")
+opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.")
 opts.addOption('-p', '--couchdb', "string", "couchdb", "", "CouchDB to persist results in.")
 
 var port = 8000;
@@ -26,7 +27,7 @@ var sum = function (values) {
   return rv;
 };
 
-var testWrites = function (url, clients, doc, duration) {
+var testWrites = function (url, clients, doc, duration, poll) {
   if (url[url.length - 1] != '/') {
     url += '/';
   }
@@ -38,7 +39,6 @@ var testWrites = function (url, clients, doc, duration) {
       posix.cat(path.join('..', 'common', doc+"_doc.json"))
         .addCallback(function (doc) {
             var starttime = new Date();
-            
             var pool = new client.Pool(clients);
             pool.startWriters(url, doc)
             setInterval(function(){
@@ -47,7 +47,7 @@ var testWrites = function (url, clients, doc, duration) {
               var r = {time:time, clients:mn[0], averagetime:mn[1]};
               results.push(r);
               sys.puts(JSON.stringify(r));
-            }, 1000);
+            }, poll * 1000);
             setTimeout(function(){
               http2.request(url, 'DELETE', {'accept':'application/json'}).addCallback(
                 function(){p.emitSuccess(results)})
@@ -60,7 +60,7 @@ var testWrites = function (url, clients, doc, duration) {
 }
 
 opts.ifScript(__filename, function(options) {
-  testWrites(options.url, options.clients, options.doc, options.duration)
+  testWrites(options.url, options.clients, options.doc, options.duration, options.poll)
     .addCallback(function(results) {
       if (options.couchdb) {
         body = {'results':results, time:new Date(), clients:options.clients, doctype:options.doc, duration:options.duration}
