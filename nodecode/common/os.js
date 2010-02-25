@@ -1,5 +1,5 @@
 var sys = require('sys'),
-    posix = require('posix'),
+    fs = require('fs'),
     path = require('path'),
     events = require('events'),
     uuid = require('./uuid');
@@ -32,7 +32,7 @@ var mkdir = function (dir, mode) {
     mode = 0755;
   }
   p = new events.Promise();
-  posix.mkdir(dir, mode)
+  fs.mkdir(dir, mode)
     .addCallback(function(){p.emitSuccess()})
     .addErrback(function(){throw 'failed to create '+dir});
   p.wait();
@@ -57,7 +57,7 @@ var isdir = function (dir) {
     return false;
   }
   var r = {};
-  posix.stat(dir)
+  fs.stat(dir)
     .addCallback(function(stat){r.result = stat.isDirectory();})
     .wait();
   return r
@@ -69,7 +69,7 @@ var open = function (file, mode, perm) {
     mode = {w:process.O_WRONLY, r:process.O_RDONLY, c:process.O_CREAT}[mode];
   }
   if (!perm) { perm = 0755 }
-  posix.open(file, mode, perm)
+  fs.open(file, mode, perm)
     .addCallback(function (fd){p.fd = fd; p.emitSuccess(fd)});
   p.wait();
   return p.fd;
@@ -79,12 +79,12 @@ var write = function (file, data) {
   if (typeof(file) == "string") {
     fd = open(file, 'w');
   }
-  posix.write(fd, data).wait();
+  fs.write(fd, data).wait();
 }
 
 var read = function (filename) {
   var p = new events.Promise();
-  posix.cat(filename).addCallback(function(content) {p.content = content; p.emitSuccess()})
+  fs.cat(filename).addCallback(function(content) {p.content = content; p.emitSuccess()})
   p.wait();
   return p.content;
 }

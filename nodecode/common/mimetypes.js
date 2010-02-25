@@ -165,7 +165,7 @@ _parseSystemTypes = function(paths) {
 			promise.emitError()
 			return
 		}
-		posix.cat(path).addCallback(function (content) {
+		fs.cat(path).addCallback(function (content) {
 			parse(content)
 			promise.emitSuccess(path)
 		}).addErrback(function(){

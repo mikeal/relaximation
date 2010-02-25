@@ -1,6 +1,6 @@
 var http = require("http");
 var sys = require("sys");
-var posix = require("posix");
+var fs = require("fs");
 var url = require("url");
 
 var sum = function (values) {
@@ -24,9 +24,9 @@ Pool.prototype.doClient = function (address, port, pathname, method, body, expec
   h._starttime = new Date();
   var r = h.request(method, pathname, {"host":address+":"+port, "content-type":"application/json"});
   if (body) {
-    r.sendBody(body, encoding="utf8");
+    r.write(body, "utf8");
   }
-  r.finish(function (response) {
+  r.addListener("response", function (response) {
     if (response.statusCode != expectedStatus) {
       throw "Expected "+expectedStatus+" got "+response.statusCode;
     }
@@ -35,9 +35,9 @@ Pool.prototype.doClient = function (address, port, pathname, method, body, expec
     }
     if (p.response_handler) {
       response.buffer = '';
-      response.addListener("body", function(chunk){response.buffer += chunk});
+      response.addListener("data", function(chunk){response.buffer += chunk});
     }
-    response.addListener("complete", function () {
+    response.addListener("end", function () {
       h.starttime = h._starttime;
       h.endtime = new Date();
       if (p.response_handler) {
@@ -53,7 +53,8 @@ Pool.prototype.doClient = function (address, port, pathname, method, body, expec
       p.doClient(address, port, pathname, method, body, expectedStatus, h, getUrl);
     })
     response.addListener("close", function() {sys.puts('bad things!')})
-  }) 
+  })
+  r.close()
 }
 Pool.prototype.getMeantime = function () {
   var active = []

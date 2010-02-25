@@ -23,6 +23,7 @@ var Changes = function (uri, options) {
   sys.puts(this.url.pathname+'?'+querystring.stringify(options))
   
   var changesHandler = function (data) {
+    sys.puts(data)
     if (data.indexOf('\n')) {
       var chunks = data.split('\n');
       if (c.buffer) {

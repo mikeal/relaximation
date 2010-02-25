@@ -1,6 +1,6 @@
 var sys = require("sys");
 var tcp = require("tcp");
-var posix = require("posix");
+var fs = require("fs");
 var http2 = require("../common/httplib2");
 var path = require("path")
 var client = require("../common/client");
@@ -30,66 +30,64 @@ var sum = function (values) {
 
 var randomnumber=Math.floor(Math.random()*11)
 
-var test = function (url, write_clients, read_clients, doc, duration, poll) {
+var test = function (url, write_clients, read_clients, doc, duration, poll, callback) {
   if (url[url.length - 1] != '/') {
     url += '/';
   }
   url += 'testwritesdb';
   var results = [];
-  var p = new events.Promise();
-  http2.request(url, 'PUT', {'accept':'application/json'})
-    .addCallback(function(status) {
-      posix.cat(path.join('..', 'common', doc+"_doc.json"))
-        .addCallback(function (doc) {
-            var starttime = new Date();
-            var ids = [];            
-            var writePool = new client.Pool(write_clients);
-            writePool.response_handler = function (resp) {
-              if (resp.id) {
-                ids.push(resp.id);
-              }
-            };
-            writePool.startWriters(url, doc)
-            var readPool = new client.Pool(read_clients);
-            setTimeout(function () {
-              readPool.start( function () {
-                var i = Math.floor(Math.random() * (ids.length - 1))
-                var id = ids[i]
-                return url+'/'+id
-              }, 'GET', null, 200);
-            },1000)
-            
-            
-            setInterval(function(){
-              var time = (new Date() - starttime) / 1000
-              var wmn = writePool.getMeantime();
-              var rmn = readPool.getMeantime();
-              var r = {time: time, writers:{clients:wmn[0], averagetime:wmn[1]},
-                                   readers:{clients:rmn[0], averagetime:rmn[1]}};
-              results.push(r);
-              sys.puts(JSON.stringify(r));
-            }, poll * 1000);
-            setTimeout(function(){
-              http2.request(url, 'DELETE', {'accept':'application/json'}).addCallback(
-                function(){p.emitSuccess(results)})
-            }, duration * 1000);
-          })
-        .addErrback(function(){sys.puts('Cannot cat'+path.join('..', 'common', doc+"_doc.json"))});
-    }
-  )
+  var p = {}
+  http2.request(url, 'PUT', {'accept':'application/json'}, undefined, function (error, status) {
+    fs.readFile(path.join('..', 'common', doc+"_doc.json"), function (error, doc) {
+      if (error) {
+        sys.puts('Cannot cat'+path.join('..', 'common', doc+"_doc.json"));
+      } else {
+        var starttime = new Date();
+        var ids = [];            
+        var writePool = new client.Pool(write_clients);
+        writePool.response_handler = function (resp) {
+          if (resp.id) {
+            ids.push(resp.id);
+          }
+        };
+        writePool.startWriters(url, doc)
+        var readPool = new client.Pool(read_clients);
+        setTimeout(function () {
+          readPool.start( function () {
+            var i = Math.floor(Math.random() * (ids.length - 1))
+            var id = ids[i]
+            return url+'/'+id
+          }, 'GET', null, 200);
+        },1000)
+        
+        
+        setInterval(function(){
+          var time = (new Date() - starttime) / 1000
+          var wmn = writePool.getMeantime();
+          var rmn = readPool.getMeantime();
+          var r = {time: time, writers:{clients:wmn[0], averagetime:wmn[1]},
+                               readers:{clients:rmn[0], averagetime:rmn[1]}};
+          results.push(r);
+          sys.puts(JSON.stringify(r));
+        }, poll * 1000);
+        setTimeout(function(){
+          http2.request(url, 'DELETE', {'accept':'application/json'}, undefined, function(){callback(undefined, results)})
+        }, duration * 1000);
+      }
+    })
+  })
   return p;
 }
 
 opts.ifScript(__filename, function(options) {
-  test(options.url, options.write_clients, options.read_clients, options.doc, options.duration, options.poll)
-    .addCallback(function(results) {
-      if (options.couchdb) {
-        body = {'results':results, time:new Date(), clients:options.clients, doctype:options.doc, duration:options.duration}
-        http2.request(options.couchdb, 'POST', {'content-type':'application/json'}, JSON.stringify(body)).addCallback(function(status){if (status != 201){sys.puts('bad!')};process.exit()})
-      } else {
-        process.exit();
-      }
-    })
+  test(options.url, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, function (results) {
+    if (options.couchdb) {
+      body = {'results':results, time:new Date(), clients:options.clients, doctype:options.doc, duration:options.duration}
+      http2.request(options.couchdb, 'POST', {'content-type':'application/json'}, JSON.stringify(body)).addCallback(function(status){if (status != 201){sys.puts('bad!')};process.exit()})
+    } else {
+      process.exit();
+    }
+  })
 })
 
 

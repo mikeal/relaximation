@@ -1,6 +1,6 @@
 var sys = require("sys");
 var tcp = require("tcp");
-var posix = require("posix");
+var fs = require("fs");
 var http2 = require("../common/httplib2");
 var path = require("path")
 var client = require("../common/client");
@@ -27,48 +27,45 @@ var sum = function (values) {
   return rv;
 };
 
-var testWrites = function (url, clients, doc, duration, poll) {
+var testWrites = function (url, clients, doc, duration, poll, callback) {
   if (url[url.length - 1] != '/') {
     url += '/';
   }
   url += 'testwritesdb';
   var results = [];
-  var p = new events.Promise();
-  http2.request(url, 'PUT', {'accept':'application/json'})
-    .addCallback(function(status) {
-      posix.cat(path.join('..', 'common', doc+"_doc.json"))
-        .addCallback(function (doc) {
-            var starttime = new Date();
-            var pool = new client.Pool(clients);
-            pool.startWriters(url, doc)
-            setInterval(function(){
-              var time = (new Date() - starttime) / 1000
-              var mn = pool.getMeantime();
-              var r = {time:time, clients:mn[0], averagetime:mn[1]};
-              results.push(r);
-              sys.puts(JSON.stringify(r));
-            }, poll * 1000);
-            setTimeout(function(){
-              http2.request(url, 'DELETE', {'accept':'application/json'}).addCallback(
-                function(){p.emitSuccess(results)})
-            }, duration * 1000);
-          })
-        .addErrback(function(){sys.puts('Cannot cat'+path.join('..', 'common', doc+"_doc.json"))});
-    }
-  )
-  return p;
+  http2.request(url, 'PUT', {'accept':'application/json'}, undefined, function (status) {
+    fs.readFile(path.join('..', 'common', doc+"_doc.json"), function (error, doc) {
+      if (error) {
+        sys.puts('Cannot cat'+path.join('..', 'common', doc+"_doc.json"));
+        process.exit(1);
+      }
+      var starttime = new Date();
+      var pool = new client.Pool(clients);
+      pool.startWriters(url, doc)
+      setInterval(function(){
+        var time = (new Date() - starttime) / 1000
+        var mn = pool.getMeantime();
+        var r = {time:time, clients:mn[0], averagetime:mn[1]};
+        results.push(r);
+        sys.puts(JSON.stringify(r));
+      }, poll * 1000);
+      setTimeout(function(){
+        http2.request(url, 'DELETE', {'accept':'application/json'}).addCallback(
+          function(){callback(undefined, results)})
+      }, duration * 1000);
+    })
+  })
 }
 
 opts.ifScript(__filename, function(options) {
-  testWrites(options.url, options.clients, options.doc, options.duration, options.poll)
-    .addCallback(function(results) {
-      if (options.couchdb) {
-        body = {'results':results, time:new Date(), clients:options.clients, doctype:options.doc, duration:options.duration}
-        http2.request(options.couchdb, 'POST', {'content-type':'application/json'}, JSON.stringify(body)).addCallback(function(status){if (status != 201){sys.puts('bad!')};process.exit()})
-      } else {
-        process.exit();
-      }
-    })
+  testWrites(options.url, options.clients, options.doc, options.duration, options.poll, function (error, results) {
+    if (options.couchdb) {
+      body = {'results':results, time:new Date(), clients:options.clients, doctype:options.doc, duration:options.duration}
+      http2.request(options.couchdb, 'POST', {'content-type':'application/json'}, JSON.stringify(body)).addCallback(function(status){if (status != 201){sys.puts('bad!')};process.exit()})
+    } else {
+      process.exit();
+    }
+  })
 })
 
 

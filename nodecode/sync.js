@@ -1,10 +1,13 @@
 var http = require('http'),
     sys = require('sys'),
     path = require('path'),
-    posix = require('posix'),
+    fs = require('fs'),
     events = require('events'),
     http2 = require('./common/httplib2'),
     mimetypes = require('./common/mimetypes');
+
+String.prototype.startsWith = function(str) {return (this.match("^"+str)==str)}
+String.prototype.endsWith = function(str) {return (this.match(str+"$")==str)};
 
 var listdir = function (pathname) {
   var p = new events.Promise();
@@ -25,7 +28,7 @@ var walk = function (pathname, callback) {
   listdir(pathname).addCallback(function(files) {
     files.forEach(function(f) {
       var abspath = path.join(pathname, f)
-      posix.stat(abspath).addCallback(function(stat) {
+      fs.stat(abspath).addCallback(function(stat) {
         if (stat.isDirectory()) {
           walk(abspath, callback);
         } else {
@@ -42,7 +45,7 @@ var updateAttachment = function (pathname, uri, rev) {
   }
   var p = new events.Promise();
   var uri = uri+'?rev='+rev
-  posix.cat(pathname).addCallback(function(content) {
+  fs.readFile(pathname).addCallback(function(content) {
     var s = pathname.split('.');
     var headers = {'content-type':mimetypes.types[s[s.length - 1]]}
     http2.request(uri, 'PUT', headers, content).addCallback(function(status, headers, body) {
@@ -61,7 +64,12 @@ latestrev = null
 
 var updateAttachments = function (rev, dev) {
   var files = [];
-  walk('design', function(f){files.push(f)});
+  walk('design', function(f){
+    sys.puts(f)
+    if (!f.startsWith("shows/") && !f.startsWith("lists/") && !f.startsWith("updates/") && !f.startsWith("rewrite.js")) {
+      files.push(f);
+    }
+  });
   var p = new events.Promise();
   var dofile = function (rev) {
     var f = files.pop()
@@ -90,7 +98,7 @@ var updateAttachments = function (rev, dev) {
 
 
 var sync = function (dev) {
-  http2.request('http://localhost:5984/results/_design/app', 'GET')
+  http2.request('http://localhost:5984/registry/_design/app', 'GET')
     .addCallback(function(status, headers, body) {
       if (status != 200) {
         var headers = {'content-type':'application/json'}
