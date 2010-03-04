@@ -65,6 +65,22 @@ Pool.prototype.getMeantime = function () {
   }
   return [active.length, (sum(active) / active.length) / 1000];
 }
+Pool.prototype.getTimeInfo = function () {
+  var p = new Date();
+  var starttimes = [];
+  var endtimes = [];
+  var meantimes = [];
+  for (var i=0;i<this.clients.length;i+=1) {
+    if (this.clients[i].endtime) {
+      var c = this.clients[i];
+      starttimes.push(c.starttime);
+      endtimes.push(c.endtime);
+      meantimes.push(c.endtime - c.starttime);
+    }
+  }
+  return {meantimes:meantimes, starttimes:starttimes, endtimes:endtimes, pollts:p}
+}
+
 Pool.prototype.start = function (urlString, method, body, expected_status, i) {
   if (i == undefined) {  i = 0 }
   i++;

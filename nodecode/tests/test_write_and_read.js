@@ -63,10 +63,27 @@ var test = function (url, write_clients, read_clients, doc, duration, poll, call
         
         setInterval(function(){
           var time = (new Date() - starttime) / 1000
-          var wmn = writePool.getMeantime();
-          var rmn = readPool.getMeantime();
-          var r = {time: time, writers:{clients:wmn[0], averagetime:wmn[1]},
-                               readers:{clients:rmn[0], averagetime:rmn[1]}};
+          // var wmn = writePool.getMeantime();
+          // var rmn = readPool.getMeantime();
+          var w = writePool.getTimeInfo();
+          var r = readPool.getTimeInfo();
+          
+          w.meantimes.sort()
+          w.starttimes.sort()
+          w.endtimes.sort()
+          r.meantimes.sort()
+          r.starttimes.sort()
+          r.endtimes.sort()
+          
+          var r = {time: time, writes:{clients:w.meantimes.length, 
+                                        averagetime:(sum(w.meantimes) / w.meantimes.length).toString().split('.')[0],
+                                        last:w.pollts - (w.endtimes[w.endtimes.length - 1]),
+                                        },
+                               reads:{clients:r.meantimes.length, 
+                                        average:(sum(r.meantimes) / r.meantimes.length).toString().split('.')[0],
+                                        last:r.pollts - r.endtimes[r.endtimes.length - 1],
+                                        }
+                   }
           results.push(r);
           sys.puts(JSON.stringify(r));
         }, poll * 1000);

@@ -44,8 +44,17 @@ var testWrites = function (url, clients, doc, duration, poll, callback) {
       pool.startWriters(url, doc)
       setInterval(function(){
         var time = (new Date() - starttime) / 1000
-        var mn = pool.getMeantime();
-        var r = {time:time, clients:mn[0], averagetime:mn[1]};
+        var w = pool.getTimeInfo();
+        
+        w.meantimes.sort()
+        w.starttimes.sort()
+        w.endtimes.sort()
+        
+        var r = {time: time, writes:{clients:w.meantimes.length, 
+                                      averagetime:(sum(w.meantimes) / w.meantimes.length).toString().split('.')[0],
+                                      last:w.pollts - (w.endtimes[w.endtimes.length - 1]),
+                                      },
+                 }
         results.push(r);
         sys.puts(JSON.stringify(r));
       }, poll * 1000);
