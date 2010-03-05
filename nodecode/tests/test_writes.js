@@ -12,7 +12,7 @@ opts.addOption('-u', '--url', "string", "url", "http://localhost:5984", "CouchDB
 opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
 opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.")
 opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.")
-opts.addOption('-p', '--couchdb', "string", "couchdb", "", "CouchDB to persist results in.")
+opts.addOption('-p', '--couchdb', "string", "couchdb", null, "CouchDB to persist results in.")
 
 var port = 8000;
 var ports = [];
@@ -51,7 +51,7 @@ var testWrites = function (url, clients, doc, duration, poll, callback) {
         w.endtimes.sort()
         
         var r = {time: time, writes:{clients:w.meantimes.length, 
-                                      averagetime:(sum(w.meantimes) / w.meantimes.length).toString().split('.')[0],
+                                      average:parseInt((sum(w.meantimes) / w.meantimes.length).toString().split('.')[0]),
                                       last:w.pollts - (w.endtimes[w.endtimes.length - 1]),
                                       },
                  }
@@ -59,8 +59,12 @@ var testWrites = function (url, clients, doc, duration, poll, callback) {
         sys.puts(JSON.stringify(r));
       }, poll * 1000);
       setTimeout(function(){
-        http2.request(url, 'DELETE', {'accept':'application/json'}).addCallback(
-          function(){callback(undefined, results)})
+        // uri, method, body, headers, client, encoding, callback
+        pool.stop(function () {
+          client.request(url, 'DELETE', undefined, undefined, undefined, undefined, function (error) {
+            callback(error, results)
+          })
+        })
       }, duration * 1000);
     })
   })
@@ -70,7 +74,13 @@ opts.ifScript(__filename, function(options) {
   testWrites(options.url, options.clients, options.doc, options.duration, options.poll, function (error, results) {
     if (options.couchdb) {
       body = {'results':results, time:new Date(), clients:options.clients, doctype:options.doc, duration:options.duration}
-      http2.request(options.couchdb, 'POST', {'content-type':'application/json'}, JSON.stringify(body)).addCallback(function(status){if (status != 201){sys.puts('bad!')};process.exit()})
+      client.request(options.couchdb, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
+        function (error, response, body) {
+          if (response.statusCode != 201) {sys.puts('bad!')}
+          else {sys.puts(options.couchdb+'/'+'_design/app/_show/writeTest/'+JSON.parse(body)['id'])}
+          process.exit();
+        }
+      )
     } else {
       process.exit();
     }

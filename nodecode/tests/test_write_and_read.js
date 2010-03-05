@@ -76,11 +76,11 @@ var test = function (url, write_clients, read_clients, doc, duration, poll, call
           r.endtimes.sort()
           
           var r = {time: time, writes:{clients:w.meantimes.length, 
-                                        averagetime:(sum(w.meantimes) / w.meantimes.length).toString().split('.')[0],
+                                        average:parseInt((sum(w.meantimes) / w.meantimes.length).toString().split('.')[0]),
                                         last:w.pollts - (w.endtimes[w.endtimes.length - 1]),
                                         },
                                reads:{clients:r.meantimes.length, 
-                                        average:(sum(r.meantimes) / r.meantimes.length).toString().split('.')[0],
+                                        average:parseInt((sum(r.meantimes) / r.meantimes.length).toString().split('.')[0]),
                                         last:r.pollts - r.endtimes[r.endtimes.length - 1],
                                         }
                    }
