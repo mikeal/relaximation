@@ -58,14 +58,10 @@ OptionParser.prototype._rparse = function (help, i, args) {
         var value = args[i + 1];
         i++; i++;
       } else {
-        if (handler[2] == true) {
-          var value = false;
-        } else {
-          var value = true;
-        }
+        var value = (!handler[2]);
         i++;
       }
-    } else if (inArray(a, '=')) {
+    } else if (a.indexOf('=') != -1) {
       var handler = this.longCharMap[a.split('=')[0]];
       var value = a.split('=')[1];
       i++;
@@ -75,11 +71,7 @@ OptionParser.prototype._rparse = function (help, i, args) {
         var value = args[i + 1];
         i++; i++;
       } else {
-        if (handler[2] == true) {
-          var value = false;
-        } else {
-          var value = true;
-        }
+        var value = (!handler[2])
         i++;
       }
     } else {
@@ -89,9 +81,10 @@ OptionParser.prototype._rparse = function (help, i, args) {
 
     if (handler[0] == "number") {
       this.options[handler[1]] = parseInt(value);
-    } else if (handler[0] != "bool") {
+    } else {
       this.options[handler[1]] = value;
     }
+    
     if (handler[4]) {
       handler[4](value);
     }
@@ -116,7 +109,7 @@ OptionParser.prototype.parse = function (help) {
   for (i in this.longCharMap) {
     var name = this.longCharMap[i][1];
     if (this.options[name] == undefined) {
-      this.options[name] = this.singleCharMap[i][2];
+      this.options[name] = this.longCharMap[i][2];
     }
   }
   return this.options;

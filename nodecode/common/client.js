@@ -11,9 +11,38 @@ var sum = function (values) {
   return rv;
 };
 
+var request = function (uri, method, body, headers, client, encoding, callback) {
+  if (typeof uri == "string") {
+    uri = url.parse(uri);
+  }
+  if (!headers) {
+    headers = {'content-type':'application/json', 'accept':'application/json'};
+  }
+  if (!client) {
+    client = http.createClient(uri.port, uri.hostname);
+  } 
+  var pathname = uri.search ? (uri.pathname + uri.search) : uri.pathname
+  var request = client.request(method, uri.pathname, headers)
+  if (body) {
+    request.write(body, encoding);
+  }
+  request.addListener("response", function (response) {
+    var buffer = '';
+    response.addListener("data", function (chunk) {
+      buffer += chunk;
+    })
+    response.addListener("end", function () {
+      callback(undefined, response, buffer);
+    })
+  })
+  request.close()
+}
+
 var Pool = function (limit) {
   this.clients = [];
   this.limit = limit;
+  this.running = false;
+  this.closed = 0
 }
 Pool.prototype.doClient = function (address, port, pathname, method, body, expectedStatus, h, getUrl) {
   var p = this;
@@ -82,6 +111,7 @@ Pool.prototype.getTimeInfo = function () {
 }
 
 Pool.prototype.start = function (urlString, method, body, expected_status, i) {
+  this.running = true;
   if (i == undefined) {  i = 0 }
   i++;
   var p = this;
@@ -102,7 +132,13 @@ Pool.prototype.start = function (urlString, method, body, expected_status, i) {
 Pool.prototype.startWriters = function (urlString, doc) {
   this.start(urlString, 'POST', doc, 201, 0);
 }
+Pool.prototype.stop = function (callback) {
+  this.running = false;
+  this.clients.forEach(function(c) {c.forceClose()});
+  callback()
+}
 
 exports.Pool = Pool;
+exports.request = request;
 
 
