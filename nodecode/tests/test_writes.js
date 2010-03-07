@@ -42,7 +42,7 @@ var testWrites = function (url, clients, doc, duration, poll, callback) {
       var starttime = new Date();
       var pool = new client.Pool(clients);
       pool.startWriters(url, doc)
-      setInterval(function(){
+      var poller = setInterval(function(){
         var time = (new Date() - starttime) / 1000
         var w = pool.getTimeInfo();
         
@@ -59,6 +59,7 @@ var testWrites = function (url, clients, doc, duration, poll, callback) {
         sys.puts(JSON.stringify(r));
       }, poll * 1000);
       setTimeout(function(){
+        clearInterval(poller);
         // uri, method, body, headers, client, encoding, callback
         pool.stop(function () {
           client.request(url, 'DELETE', undefined, undefined, undefined, undefined, function (error) {
@@ -69,6 +70,8 @@ var testWrites = function (url, clients, doc, duration, poll, callback) {
     })
   })
 }
+
+exports.testWrites = testWrites;
 
 opts.ifScript(__filename, function(options) {
   testWrites(options.url, options.clients, options.doc, options.duration, options.poll, function (error, results) {

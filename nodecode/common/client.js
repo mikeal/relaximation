@@ -49,6 +49,9 @@ Pool.prototype.doClient = function (address, port, pathname, method, body, expec
   if (h == undefined) {
     var h = http.createClient(port, address);
     this.clients.push(h);
+  }
+  if (!this.running) {
+    return;
   } 
   h._starttime = new Date();
   var r = h.request(method, pathname, {"host":address+":"+port, "content-type":"application/json"});
@@ -134,8 +137,8 @@ Pool.prototype.startWriters = function (urlString, doc) {
 }
 Pool.prototype.stop = function (callback) {
   this.running = false;
-  this.clients.forEach(function(c) {c.forceClose()});
-  callback()
+  this.clients.forEach(function(c) {c.close(); c.forceClose()});
+  if (callback) { callback() }
 }
 
 exports.Pool = Pool;

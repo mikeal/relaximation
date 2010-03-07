@@ -61,7 +61,7 @@ var test = function (url, write_clients, read_clients, doc, duration, poll, call
         },1000)
         
         
-        setInterval(function(){
+        var poller = setInterval(function(){
           var time = (new Date() - starttime) / 1000
           // var wmn = writePool.getMeantime();
           // var rmn = readPool.getMeantime();
@@ -88,7 +88,15 @@ var test = function (url, write_clients, read_clients, doc, duration, poll, call
           sys.puts(JSON.stringify(r));
         }, poll * 1000);
         setTimeout(function(){
-          http2.request(url, 'DELETE', {'accept':'application/json'}, undefined, function(){callback(undefined, results)})
+          // uri, method, body, headers, client, encoding, callback
+          clearInterval(poller);
+          readPool.stop(function () {
+            writePool.stop(function () {
+              client.request(url, 'DELETE', undefined, undefined, undefined, undefined, function (error) {
+                callback(error, results)
+              })
+            })
+          })
         }, duration * 1000);
       }
     })
@@ -96,12 +104,21 @@ var test = function (url, write_clients, read_clients, doc, duration, poll, call
   return p;
 }
 
+exports.test = test;
+
 opts.ifScript(__filename, function(options) {
-  test(options.url, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, function (results) {
+  test(options.url, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, function (error, results) {
     if (options.couchdb) {
-      body = {'results':results, time:new Date(), clients:options.clients, doctype:options.doc, duration:options.duration}
-      http2.request(options.couchdb, 'POST', {'content-type':'application/json'}, JSON.stringify(body)).addCallback(function(status){if (status != 201){sys.puts('bad!')};process.exit()})
-    } else {
+      body = {results:results, time:new Date(), rclients:options.read_clients, 
+              wclients:options.write_clients, doctype:options.doc, duration:options.duration}
+      client.request(options.couchdb, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
+        function (error, response, body) {
+          if (response.statusCode != 201) {sys.puts('bad!')}
+          else {sys.puts(options.couchdb+'/'+'_design/app/_show/writeReadTest/'+JSON.parse(body)['id'])}
+          process.exit();
+        }
+      )    
+      } else {
       process.exit();
     }
   })
