@@ -1,0 +1,95 @@
+<h1>Concurrent Writer Test</h1>
+
+<div id="graphcontainer">
+  <div id="placeholder" style="width:1000px;height:500px;"></div>
+</div>
+
+<div id="resultlist"></div>
+<div id="writers">Writers :: {{clients}}</div>
+
+<script id="source" language="javascript" type="text/javascript">
+var results = JSON.parse('{{{results}}}');
+var lines = [];
+var clients = {{clients}};
+var recurrence = {{recurrence}};
+
+function sum (values) {
+  var rv = 0;
+  for (var i in values) {
+    rv += values[i];
+  }
+  return rv;
+}
+
+results.forEach(function (r) {
+  // var a = (r.writes.average < r.writes.last) ? r.writes.average : (r.writes.average + (r.writes.last - r.writes.average))
+  // var a = r.writes.average
+  rline = []  
+  for (var p=0;p<r.results[0].results.length;p+=1) {
+    var s = []
+    for (var i=0;i<r.results.length;i+=1) {
+      if (r.results[i].results[p].writes.clients === clients){
+        if (r.results[i].results[p].writes.last > r.results[i].results[p].writes.average) {
+          a = r.results[i].results[p].writes.last
+        } else {
+          a = r.results[i].results[p].writes.average
+        }
+        s.push(a) 
+      }
+      var time = r.results[i].results[p].time
+    }
+    if (s.length == recurrence) {
+      rline.push([time, sum(s) / recurrence])
+    }
+  }
+  lines.push({label:r.name, data:rline})
+  
+  // if (r.writes.clients == {{wclients}}) {
+  //   if (r.writes.last > r.writes.average) {
+  //     a = r.writes.last;
+  //   } else {
+  //     a = r.writes.average;
+  //   }
+  //   wline.push([r.time, a])
+  // }
+  // if (r.reads.clients == {{rclients}}) {
+  //   if (r.reads.last > r.reads.average) {
+  //     a = r.reads.last;
+  //   } else {
+  //     a = r.reads.average;
+  //   }
+  //   rline.push([r.time, a])
+  // }
+})
+$.plot($("#placeholder"), lines)
+// 
+// $.ajax({dataType:'json',
+//         success:function(alldocs){
+//           alldocs.rows.forEach(function(doc) {
+//             if (doc.id[0] != '_') {
+//               var id = doc.id
+//               var doc = doc.doc;
+//               var text = id+' '+doc.time+' '+doc.clients+' '+doc.duration+' '+doc.doctype
+//               $('<a href="#" onclick="javascript:update(\''+id+'\')">'+text+'</a><br>').appendTo('div#resultlist');
+//             }
+//           })
+//         },
+//         url:'/results/_all_docs?include_docs=true',
+//         })
+// 
+// var update = function (id) {
+//   $.ajax({dataType:'json',
+//          success:function(resultdoc) {
+//            var d = []
+//            resultdoc.results.forEach(function(r){
+//              if (r.clients == resultdoc.clients) {
+//                d.push([r.time, r.averagetime])
+//              }
+//            });
+//            $.plot($("#placeholder"), [ d ]);
+//          },
+//          url:'/results/'+id,
+//         });
+// }
+ 
+</script>
