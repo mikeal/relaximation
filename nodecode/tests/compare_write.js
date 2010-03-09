@@ -17,7 +17,8 @@ opts.addOption('-2', '--name2', "string", "name2", null, "Name of first comparat
 opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
 opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.")
 opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.")
-opts.addOption('-p', '--couchdb', "string", "couchdb", null, "CouchDB to persist results in.")
+opts.addOption('-p', '--couchdb', "string", "couchdb", "http://couchdb.couchdb.org/graphs", 
+               "CouchDB to persist results in.")
 opts.addOption('-r', '--recurrence', "number", "recurrence", 10, "How many times to run the tests.")
 
 var port = 8000;

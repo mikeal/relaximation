@@ -13,7 +13,8 @@ opts.addOption('-u', '--url', "string", "url", "http://localhost:5984", "CouchDB
 opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
 opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.")
 opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.")
-opts.addOption('-p', '--couchdb', "string", "couchdb", "", "CouchDB to persist results in.")
+opts.addOption('-p', '--couchdb', "string", "couchdb", "http://couchdb.couchdb.org/graphs", 
+               "CouchDB to persist results in.")
 
 var port = 8000;
 var ports = [];

@@ -7,10 +7,11 @@
 <div id="resultlist"></div>
 <div id="writers">Writers :: {{writers}}</div>
 <div id="writers">Readers :: {{readers}}</div>
+<div id="choices">Show:</div>
 
 <script id="source" language="javascript" type="text/javascript">
 var results = JSON.parse('{{{results}}}');
-var lines = [];
+var lines = {};
 var rclients = {{rclients}};
 var wclients = {{wclients}};
 var recurrence = {{recurrence}};
@@ -24,22 +25,20 @@ function sum (values) {
 }
 
 results.forEach(function (r) {
-  // var a = (r.writes.average < r.writes.last) ? r.writes.average : (r.writes.average + (r.writes.last - r.writes.average))
-  // var a = r.writes.average
   rline = []  
   wline = []
   for (var p=0;p<r.results[0].results.length;p+=1) {
     var writes = []
     for (var i=0;i<r.results.length;i+=1) {
-      if (r.results[i].results[p].writes.clients === wclients){
+      if (r.results[i].results[p] && r.results[i].results[p].writes.clients === wclients){
         if (r.results[i].results[p].writes.last > r.results[i].results[p].writes.average) {
           w = r.results[i].results[p].writes.last
         } else {
           w = r.results[i].results[p].writes.average
         }
         writes.push(w) 
-      }
-      var time = r.results[i].results[p].time
+        var time = r.results[i].results[p].time
+      } 
     }
     if (writes.length == recurrence) {
       wline.push([time, sum(writes) / recurrence])
@@ -47,73 +46,50 @@ results.forEach(function (r) {
     
     var reads = []
     for (var i=0;i<r.results.length;i+=1) {
-      if (r.results[i].results[p].reads.clients === rclients){
+      if (r.results[i].results[p] && r.results[i].results[p].reads.clients === rclients){
         if (r.results[i].results[p].reads.last > r.results[i].results[p].reads.average) {
           re = r.results[i].results[p].reads.last
         } else {
           re = r.results[i].results[p].reads.average
         }
         reads.push(re) 
+        var time = r.results[i].results[p].time
       }
-      var time = r.results[i].results[p].time
     }  
     if (reads.length == recurrence) {
       rline.push([time, sum(reads) / recurrence])
     }
-    
   }
-  // 
-  // console.log(wline)
-  // console.log(rline)
-  lines.push({label:r.name+' writes', data:wline})
-  lines.push({label:r.name+' reads', data:rline})
-  
-  // if (r.writes.clients == {{wclients}}) {
-  //   if (r.writes.last > r.writes.average) {
-  //     a = r.writes.last;
-  //   } else {
-  //     a = r.writes.average;
-  //   }
-  //   wline.push([r.time, a])
-  // }
-  // if (r.reads.clients == {{rclients}}) {
-  //   if (r.reads.last > r.reads.average) {
-  //     a = r.reads.last;
-  //   } else {
-  //     a = r.reads.average;
-  //   }
-  //   rline.push([r.time, a])
-  // }
+  var key = r.name+' writes';
+  lines[key] = {label:key, data:wline}
+  var key = r.name+' reads';
+  lines[key] = {label:key, data:rline}
 })
-$.plot($("#placeholder"), lines)
-// 
-// $.ajax({dataType:'json',
-//         success:function(alldocs){
-//           alldocs.rows.forEach(function(doc) {
-//             if (doc.id[0] != '_') {
-//               var id = doc.id
-//               var doc = doc.doc;
-//               var text = id+' '+doc.time+' '+doc.clients+' '+doc.duration+' '+doc.doctype
-//               $('<a href="#" onclick="javascript:update(\''+id+'\')">'+text+'</a><br>').appendTo('div#resultlist');
-//             }
-//           })
-//         },
-//         url:'/results/_all_docs?include_docs=true',
-//         })
-// 
-// var update = function (id) {
-//   $.ajax({dataType:'json',
-//          success:function(resultdoc) {
-//            var d = []
-//            resultdoc.results.forEach(function(r){
-//              if (r.clients == resultdoc.clients) {
-//                d.push([r.time, r.averagetime])
-//              }
-//            });
-//            $.plot($("#placeholder"), [ d ]);
-//          },
-//          url:'/results/'+id,
-//         });
-// }
- 
+
+var i = 0;
+$.each(lines, function(key, val) { val.color = i; ++i; });
+// insert checkboxes 
+var choiceContainer = $("#choices");
+$.each(lines, function(key, val) {
+    choiceContainer.append('<br/><input type="checkbox" name="' + key +
+                           '" checked="checked" id="id' + key + '">' +
+                           '<label for="id' + key + '">'
+                            + val.label + '</label>');
+});
+choiceContainer.find("input").click(plotAccordingToChoices);
+
+function plotAccordingToChoices() {
+    var data = [];
+    choiceContainer.find("input:checked").each(function () {
+        var key = $(this).attr("name");
+        if (key && lines[key])
+            data.push(lines[key]);
+    });
+    if (data.length > 0)
+        $.plot($("#placeholder"), data, {
+            yaxis: { min: 0 },
+            xaxis: { tickDecimals: 0 }
+        });
+}
+plotAccordingToChoices();
 </script>
