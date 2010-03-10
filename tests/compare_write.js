@@ -17,7 +17,7 @@ opts.addOption('-2', '--name2', "string", "name2", null, "Name of first comparat
 opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
 opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.")
 opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.")
-opts.addOption('-p', '--couchdb', "string", "couchdb", null, "CouchDB to persist results in.")
+opts.addOption('-p', '--graph', "string", "graph", null, "CouchDB to persist results in.")
 opts.addOption('-r', '--recurrence', "number", "recurrence", 10, "How many times to run the tests.")
 
 var port = 8000;
@@ -60,10 +60,10 @@ opts.ifScript(__filename, function(options) {
           body = {'results':[{name:options.name1, results:results1}, {name:options.name2, results:results2}], 
                   time:new Date(), clients:options.clients, doctype:options.doc, duration:options.duration,
                   recurrence:options.recurrence}
-          client.request(options.couchdb, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
+          client.request(options.graph, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
             function (error, response, body) {
               if (response.statusCode != 201) {sys.puts('bad!')}
-              else {sys.puts(options.couchdb+'/'+'_design/app/_show/compareWriteTest/'+JSON.parse(body)['id'])}
+              else {sys.puts(options.graph+'/'+'_design/app/_show/compareWriteTest/'+JSON.parse(body)['id'])}
               process.exit();
           })
         }

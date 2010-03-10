@@ -1,4 +1,4 @@
-var couchapp = require('../../node.couch.js/couchapp/lib/couchapp'),
+var couchapp = require('couchapp-0.2.0'),
     path = require('path');
 
 ddoc = {_id:'app',templates:{},modules:{},shows:{}}

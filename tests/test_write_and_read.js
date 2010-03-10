@@ -13,7 +13,7 @@ opts.addOption('-u', '--url', "string", "url", "http://localhost:5984", "CouchDB
 opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
 opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.")
 opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.")
-opts.addOption('-p', '--couchdb', "string", "couchdb", "", "CouchDB to persist results in.")
+opts.addOption('-p', '--graph', "string", "graph", "", "CouchDB to persist results in.")
 
 var port = 8000;
 var ports = [];
@@ -108,13 +108,13 @@ exports.test = test;
 
 opts.ifScript(__filename, function(options) {
   test(options.url, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, function (error, results) {
-    if (options.couchdb) {
+    if (options.graph) {
       body = {results:results, time:new Date(), rclients:options.read_clients, 
               wclients:options.write_clients, doctype:options.doc, duration:options.duration}
-      client.request(options.couchdb, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
+      client.request(options.graph, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
         function (error, response, body) {
           if (response.statusCode != 201) {sys.puts('bad!')}
-          else {sys.puts(options.couchdb+'/'+'_design/app/_show/writeReadTest/'+JSON.parse(body)['id'])}
+          else {sys.puts(options.graph+'/'+'_design/app/_show/writeReadTest/'+JSON.parse(body)['id'])}
           process.exit();
         }
       )    

@@ -2,6 +2,7 @@ var http = require("http");
 var sys = require("sys");
 var fs = require("fs");
 var url = require("url");
+var base64 = require("base64");
 
 var sum = function (values) {
   var rv = 0;
@@ -18,9 +19,21 @@ var request = function (uri, method, body, headers, client, encoding, callback) 
   if (!headers) {
     headers = {'content-type':'application/json', 'accept':'application/json'};
   }
-  if (!client) {
+  if (!headers.host) {
+    headers.host = uri.hostname;
+    if (uri.port) {
+      headers.host += (':'+uri.port)
+    }
+  }
+  if (!uri.port) {
+    uri.port = 80;
+  }
+  if (!client) { 
     client = http.createClient(uri.port, uri.hostname);
-  } 
+  }
+  if (uri.auth) {
+    headers.authorization = "Basic " + base64.encode(uri.auth);
+  }
   var pathname = uri.search ? (uri.pathname + uri.search) : uri.pathname
   var request = client.request(method, uri.pathname, headers)
   if (body) {
