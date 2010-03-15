@@ -1,5 +1,6 @@
 ## Running
 
+<pre>
   $ cd tests
   $ node compare_write_and_read.js --help
   
@@ -14,10 +15,12 @@
   -i,  --poll :: Polling interval in seconds. Default is 1.
   -p,  --graph :: CouchDB to persist results in. Default is http://couchdb.couchdb.org/graphs
   -r,  --recurrence :: How many times to run the tests. Deafult is 10.
+</pre>
   
 All the options have defaults except name1 and name2 which need to be set.
 
+<pre>
   $ node compare_write_and_read --name1 trunk --name2 branch
-
+</pre>
 
 
