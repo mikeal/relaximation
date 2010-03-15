@@ -48,7 +48,7 @@ OptionParser.prototype._rparse = function (help, i, args) {
   } else if (i == 0 && a.match('.js'+"$")=='.js') {
     this.script = a;
     i++;
-  } else if (help && a == 'help') {
+  } else if (help && ['help', '--help', '-h'].indexOf(a) != -1) {
     this.printHelp();
     process.exit();
   } else {
