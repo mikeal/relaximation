@@ -2,7 +2,7 @@ var http = require("http");
 var sys = require("sys");
 var fs = require("fs");
 var url = require("url");
-var base64 = require("base64");
+var base64 = require("./base64");
 
 var sum = function (values) {
   var rv = 0;
