@@ -39,44 +39,47 @@ var sum = function (values) {
   return rv;
 };
 
-opts.ifScript(__filename, function(options) {
-  if (!options.name1 || !options.name2) {
-    throw "YOU MUST GIVE ME NAMES, --name1 and --name2"
-  }
-  
+function runTest (options, callback) {
   var results1 = []
   var results2 = []
 
   var i = 1;
-
-  function runTest () {
-    testModule.test(options.url1, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, function (error, results) {
-      var r = {results:results, time:new Date(), clients:options.clients, 
-               doctype:options.doc, duration:options.duration}
-      results1.push(r)
-      testModule.test(options.url2, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, function(error, results) {
-        r = {results:results, time:new Date(), clients:options.clients, 
+  
+  testModule.test(options.url1, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, function (error, results) {
+    var r = {results:results, time:new Date(), clients:options.clients, 
              doctype:options.doc, duration:options.duration}
-        results2.push(r)
+    results1.push(r)
+    testModule.test(options.url2, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, function(error, results) {
+      r = {results:results, time:new Date(), clients:options.clients, 
+           doctype:options.doc, duration:options.duration}
+      results2.push(r)
 
-        if (i !== options.recurrence) {
-          i += 1;
-          runTest();
-        } else {
-          body = {'results':[{name:options.name1, results:results1}, {name:options.name2, results:results2}], 
-                  time:new Date(), rclients:options.read_clients, doctype:options.doc, duration:options.duration,
-                  recurrence:options.recurrence, wclients:options.write_clients}
-          client.request(options.graph, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
-            function (error, response, body) {
-              if (response.statusCode != 201) {sys.puts('bad!')}
-              else {sys.puts(options.graph+'/'+'_design/app/_show/compareWriteReadTest/'+JSON.parse(body)['id'])}
-              process.exit();
-          })
+      if (i !== options.recurrence) {
+        i += 1;
+        runTest();
+      } else {
+        body = {'results':[{name:options.name1, results:results1}, {name:options.name2, results:results2}], 
+                time:new Date(), rclients:options.read_clients, doctype:options.doc, duration:options.duration,
+                recurrence:options.recurrence, wclients:options.write_clients}
+        if (callback) {
+          callback(body);
         }
-      })
+        client.request(options.graph, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
+          function (error, response, body) {
+            if (response.statusCode != 201) {sys.puts('bad!')}
+            else {sys.puts(options.graph+'/'+'_design/app/_show/compareWriteReadTest/'+JSON.parse(body)['id'])}
+            process.exit();
+        })
+      }
     })
+  })
+}
+
+opts.ifScript(__filename, function(options) {
+  if (!options.name1 || !options.name2) {
+    throw "YOU MUST GIVE ME NAMES, --name1 and --name2"
   }
-  runTest()
+  runTest(options)
 })
 
 
