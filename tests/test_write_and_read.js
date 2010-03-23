@@ -38,9 +38,9 @@ var test = function (url, write_clients, read_clients, doc, duration, poll, call
   var results = [];
   var p = {}
   http2.request(url, 'PUT', {'accept':'application/json'}, undefined, function (error, status) {
-    fs.readFile(path.join('..', 'common', doc+"_doc.json"), function (error, doc) {
+    fs.readFile(path.join(__dirname, '..', 'common', doc+"_doc.json"), function (error, doc) {
       if (error) {
-        sys.puts('Cannot cat'+path.join('..', 'common', doc+"_doc.json"));
+        sys.puts('Cannot cat '+path.join(__dirname, '..', 'common', doc+"_doc.json"));
       } else {
         var starttime = new Date();
         var ids = [];            
