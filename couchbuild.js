@@ -79,6 +79,10 @@ buildCommands = {
           ]
 }
 
+configureOptions = {darwin:['--with-js-include=/usr/local/spidermonkey/include', 
+                           '--with-js-lib=/usr/local/spidermonkey/lib'],
+                    linux2:[]}
+
 function builder (builds, workingDir) {
   var buildqueues = [];
   builds.forEach(function (info) {
@@ -94,8 +98,7 @@ function builder (builds, workingDir) {
         subprocess('./bootstrap', [], w, callback)
       },
       function (callback) {
-        subprocess('./configure', ['--with-js-include=/usr/local/spidermonkey/include', 
-                                   '--with-js-lib=/usr/local/spidermonkey/lib'], w, callback)
+        subprocess('./configure', configureOptions[process.platform], w, callback)
       },
       function (callback) {
         subprocess('make', [], w, callback)
