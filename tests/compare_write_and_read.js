@@ -44,7 +44,7 @@ function runTest (options, callback) {
 
   var i = 1;
   
-  function r () {
+  function run () {
     testModule.test(options.url1, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, function (error, results) {
       var r = {results:results, time:new Date(), clients:options.clients, 
                doctype:options.doc, duration:options.duration}
@@ -56,7 +56,7 @@ function runTest (options, callback) {
 
         if (i !== options.recurrence) {
           i += 1;
-          r();
+          run();
         } else {
           body = {'results':[{name:options.name1, results:results1}, {name:options.name2, results:results2}], 
                   time:new Date(), rclients:options.read_clients, doctype:options.doc, duration:options.duration,
