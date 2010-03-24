@@ -74,7 +74,7 @@ function runTest (options, callback) {
       })
     })
   }
-  r();
+  run();
 }
 
 opts.ifScript(__filename, function(options) {
