@@ -30,7 +30,11 @@ var request = function (uri, method, body, headers, client, encoding, callback) 
   }
   if (!client) { 
     client = http.createClient(uri.port, uri.hostname);
-  }
+  } 
+  
+  var clientErrorHandler = function (error) {callback(error ? error : "clientError")}
+  client.addListener("error", clientErrorHandler)
+  
   if (uri.auth) {
     headers.authorization = "Basic " + base64.encode(uri.auth);
   }
@@ -45,6 +49,7 @@ var request = function (uri, method, body, headers, client, encoding, callback) 
       buffer += chunk;
     })
     response.addListener("end", function () {
+      client.removeListener("error", clientErrorHandler);
       callback(undefined, response, buffer);
     })
   })
@@ -55,7 +60,8 @@ var Pool = function (limit) {
   this.clients = [];
   this.limit = limit;
   this.running = false;
-  this.closed = 0
+  this.closed = 0;
+  this.auth = {};
 }
 Pool.prototype.doClient = function (address, port, pathname, method, body, expectedStatus, h, getUrl) {
   var p = this;
@@ -67,16 +73,20 @@ Pool.prototype.doClient = function (address, port, pathname, method, body, expec
     return;
   } 
   h._starttime = new Date();
-  var r = h.request(method, pathname, {"host":address+":"+port, "content-type":"application/json"});
+  var headers = {"host":address+":"+port, "content-type":"application/json", 
+                                       accept:"application/json"}
+  if (this.auth[address+':'+port]) {
+    headers.authorization = "Basic " + base64.encode(this.auth[address+':'+port]);
+  }
+  var r = h.request(method, pathname, headers);
+  h.busy = true;
   if (body) {
     r.write(body, "utf8");
   }
   r.addListener("response", function (response) {
     if (response.statusCode != expectedStatus) {
+      sys.puts("Expected "+expectedStatus+" got "+response.statusCode+" "+method)      
       throw "Expected "+expectedStatus+" got "+response.statusCode;
-    }
-    if (response.httpVersion != '1.1') {
-      throw "Unexpected version.";
     }
     if (p.response_handler) {
       response.buffer = '';
@@ -85,7 +95,9 @@ Pool.prototype.doClient = function (address, port, pathname, method, body, expec
     response.addListener("end", function () {
       h.starttime = h._starttime;
       h.endtime = new Date();
-      if (p.response_handler) {
+      h.busy = false;
+      if (p.response_handler && response.headers['content-type'] === 'application/json') {
+        // sys.puts(response.buffer)
         p.response_handler(JSON.parse(response.buffer))
       }
       if (getUrl) {
@@ -95,7 +107,10 @@ Pool.prototype.doClient = function (address, port, pathname, method, body, expec
         if (u.search) { pathname += u.search; }
         address = u.hostname; port = parseInt(u.port);
       }
-      p.doClient(address, port, pathname, method, body, expectedStatus, h, getUrl);
+      setTimeout(function(){
+        p.doClient(address, port, pathname, method, body, expectedStatus, h, getUrl);
+      }, 0)
+      
     })
     response.addListener("close", function() {sys.puts('bad things!')})
   })

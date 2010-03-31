@@ -1,5 +1,4 @@
 var sys = require("sys");
-var tcp = require("tcp");
 var fs = require("fs");
 var http2 = require("../common/httplib2");
 var path = require("path")
@@ -37,7 +36,14 @@ var test = function (url, write_clients, read_clients, doc, duration, poll, call
   url += 'testwritesdb';
   var results = [];
   var p = {}
-  http2.request(url, 'PUT', {'accept':'application/json'}, undefined, function (error, status) {
+  http2.request(url, 'PUT', {'accept':'application/json'}, undefined, function (error, response, buffer) {
+    if (error) {
+      sys.puts("Error "+error);
+      throw(error)
+    } else if (response.statusCode != 201) {
+      sys.puts("Could not create database "+response.statusCode+" "+buffer);
+      throw(error)
+    }
     fs.readFile(path.join('..', 'common', doc+"_doc.json"), function (error, doc) {
       if (error) {
         sys.puts('Cannot cat'+path.join('..', 'common', doc+"_doc.json"));
