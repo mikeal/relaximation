@@ -66,7 +66,9 @@ function runTest (options, callback) {
           }
           client.request(options.graph, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
             function (error, response, body) {
-              if (response.statusCode != 201) {sys.puts('bad!')}
+              if (response.statusCode != 201) {
+                sys.puts('Failed to store results in ' + options.graph);
+              }
               else {sys.puts(options.graph+'/'+'_design/app/_show/compareWriteReadTest/'+JSON.parse(body)['id'])}
               process.exit();
           })
