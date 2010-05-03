@@ -176,16 +176,42 @@ function createPool (size, port, hostname, method, pathname, headers, body, stat
   return pool
 }
 
-function createWritePool (size, uri, doc) {
-  var uri = url.parse(uri);
-  var p = createPool(size, uri.port, uri.hostname, 'POST', uri.pathname, {'content-type':'application/json'}, doc, function (status) {
+function createWritePool (size, uri, doc, statusCallback, bodyCallback) {
+  if (typeof uri === 'string') {
+    var u = url.parse(uri);
+    uri = u.pathname;
+  } else {
+    var u = url.parse(uri());
+  }
+  var p = createPool(size, u.port, u.hostname, 'POST', uri, {'content-type':'application/json'}, doc, function (status) {
+    if (statusCallback) {
+      statusCallback(status);
+    }
     if (status !== 201) {throw new Error("Status is not 201")}
-  });
+  }, bodyCallback);
+  return p;
+}
+
+function createReadPool (size, uri, statusCallback, bodyCallback) {
+  if (typeof uri === 'string') {
+    var u = url.parse(uri);
+    uri = u.pathname;
+  } else {
+    var u = url.parse(uri());
+  }
+  
+  var p = createPool(size, u.port, u.hostname, 'GET', uri, {'content-type':'application/json'}, null, function (status) {
+    if (statusCallback) {
+      statusCallback(status);
+    }
+    if (status !== 200) {throw new Error("Status is not 200. Got "+status)}
+  }, bodyCallback);
   return p;
 }
 
 exports.createPool = createPool;
 exports.createWritePool = createWritePool;
+exports.createReadPool = createReadPool;
 
 if (require.main == module) {
   var pool = createPool(1000, 5984, 'localhost', 'GET', '/newvisitors', {'accept-type':'application/json'}, null, null, function (body) {    

@@ -73,7 +73,7 @@ var request = function (uri, method, headers, body, callback) {
       callback(undefined, response, buffer);
     })
   })
-  request.close()
+  request.end()
 }
 
 exports.request = request;

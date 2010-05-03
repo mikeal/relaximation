@@ -12,7 +12,7 @@ opts.addOption('-u', '--url', "string", "url", "http://localhost:5984", "CouchDB
 opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
 opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.")
 opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.")
-opts.addOption('-p', '--graph', "string", "graph", "http://couchdb.couchdb.org/graphs", "CouchDB to persist results in.")
+opts.addOption('-p', '--graph', "string", "graph", "http://mikeal.couchone.com/graphs", "CouchDB to persist results in.")
 
 var port = 8000;
 var ports = [];
@@ -85,6 +85,7 @@ opts.ifScript(__filename, function(options) {
       body = {'results':results, time:new Date(), clients:options.clients, doctype:options.doc, duration:options.duration}
       client.request(options.graph, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
         function (error, response, body) {
+          if (error) {throw new Error(error)}
           if (response.statusCode != 201) {throw new Error(error + ' Status ' + response.statusCode + '\n' + body)}
           else {sys.puts(options.graph+'/'+'_design/app/_show/writeTest/'+JSON.parse(body)['id'])}
           process.exit();
