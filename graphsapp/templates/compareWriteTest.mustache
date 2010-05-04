@@ -6,6 +6,7 @@
 
 <div id="resultlist"></div>
 <div id="writers">Writers :: {{clients}}</div>
+<div id="averages">Averages :: {{name1}} == <span id="val1"></span> {{name2}} == <span id="val2"></span></div>
 
 <script id="source" language="javascript" type="text/javascript">
 var results = JSON.parse('{{{results}}}');
@@ -24,7 +25,8 @@ function sum (values) {
 results.forEach(function (r) {
   // var a = (r.writes.average < r.writes.last) ? r.writes.average : (r.writes.average + (r.writes.last - r.writes.average))
   // var a = r.writes.average
-  rline = []  
+  rline = [];
+  var average = [];
   for (var p=0;p<r.results[0].results.length;p+=1) {
     var s = []
     for (var i=0;i<r.results.length;i+=1) {
@@ -39,9 +41,12 @@ results.forEach(function (r) {
       var time = r.results[i].results[p].time
     }
     if (s.length == recurrence) {
-      rline.push([time, sum(s) / recurrence])
+      var s = sum(s) / recurrence;
+      average.push(s);
+      rline.push([time, s]);
     }
   }
+  $('#val'+(lines.length+1)).html(((sum(average) / average.length) * clients) / 1000);
   lines.push({label:r.name, data:rline})
   
   // if (r.writes.clients == {{wclients}}) {

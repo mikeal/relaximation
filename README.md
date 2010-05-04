@@ -13,7 +13,7 @@
   -d,  --doc :: small or large doc. Default is small.
   -t,  --duration :: Duration of the run in seconds. Default is 60.
   -i,  --poll :: Polling interval in seconds. Default is 1.
-  -p,  --graph :: CouchDB to persist results in. Default is http://couchdb.couchdb.org/graphs
+  -p,  --graph :: CouchDB to persist results in. Default is http://mikeal.couchone.com/graphs
   -r,  --recurrence :: How many times to run the tests. Deafult is 10.
 </pre>
   
