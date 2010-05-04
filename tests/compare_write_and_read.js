@@ -1,12 +1,13 @@
 var testModule = require('./test_write_and_read')
 
-var sys = require("sys");
-var fs = require("fs");
-var http2 = require("../common/httplib2");
-var path = require("path")
-var client = require("../common/client");
-var optionparser = require("../common/optionparser");
-var events = require('events');
+var sys = require("sys"),
+    fs = require("fs"),
+    http2 = require("../common/httplib2"),
+    path = require("path"),
+    client = require("../common/client"),
+    optionparser = require("../common/optionparser"),
+    events = require('events');
+
 var opts = new optionparser.OptionParser();
 opts.addOption('-w', '--wclients', "number", "write_clients", 50, 
                "Number of concurrent write clients per process. Default is 50.");
@@ -21,8 +22,8 @@ opts.addOption('-2', '--name2', "string", "name2", null, "Name of first comparat
 opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc. Default is small.");
 opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds. Default is 60.")
 opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds. Default is 1.")
-opts.addOption('-p', '--graph', "string", "graph", "http://couchdb.couchdb.org/graphs", 
-               "CouchDB to persist results in. Default is http://couchdb.couchdb.org/graphs")
+opts.addOption('-p', '--graph', "string", "graph", "http://mikeal.couchone.com/graphs", 
+               "CouchDB to persist results in. Default is http://mikeal.couchone.com/graphs")
 opts.addOption('-r', '--recurrence', "number", "recurrence", 10, "How many times to run the tests. Deafult is 10.")
 
 var port = 8000;
@@ -66,8 +67,10 @@ function runTest (options, callback) {
           }
           client.request(options.graph, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
             function (error, response, body) {
+              if (error) {throw new Error(error)}
               if (response.statusCode != 201) {
                 sys.puts('Failed to store results in ' + options.graph);
+                throw new Error(error + ' Status ' + response.statusCode + '\n' + body);
               }
               else {sys.puts(options.graph+'/'+'_design/app/_show/compareWriteReadTest/'+JSON.parse(body)['id'])}
               process.exit();
