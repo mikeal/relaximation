@@ -69,6 +69,10 @@ A few notes about the graph. Lines don't start until the number of clients has r
 
 # CouchDB Configuration
 
-Concurrent performance is really unreliable when running with Delayed Commits on, which as of 0.10 is the default configuration. You'll want to turn this off on order to make concurrent performance more stable over a test run.
+Concurrent performance is really unreliable when running with Delayed Commits on, which as of 0.10 is the default configuration. You'll want to turn this off on order to make concurrent performance more stable over a test run. You can do this in your local couchdb config.
 
-
+<pre>
+  [couchdb]
+  ;max_document_size = 4294967296 ; bytes
+  delayed_commits = false;
+</pre>
