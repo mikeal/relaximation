@@ -28,10 +28,10 @@ Two tests operate against two databases in order to show the differences in perf
 All the options have defaults except name1 and name2 which MUST to be set.
 
 <pre>
-  $ node compare_write_and_read --name1 trunk --name2 branch
+  $ node compare_write_and_read.js --name1 trunk --name2 branch
 </pre>
 
-By default this test runes for 60 seconds (duration setting) against both servers 10 times (recurrence setting), this  means that by default this test will take 20 minutes to run.
+By default this test runs for 60 seconds (duration setting) against both servers 10 times (recurrence setting), this  means that by default this test will take 20 minutes to run.
 
 # Test Output
 
@@ -66,3 +66,9 @@ By default all tests will POST the results to http://mikeal.couchone.com/graphs 
 ![graph](http://mikeal.couchone.com/graphs/c34d5d47f99e11be1f591832d00037e5/cropped.png "Sample Graph")
 
 A few notes about the graph. Lines don't start until the number of clients has ramped up to max level defined for the test, and this is across all recurrences of the same test run. This means that performance problems that might occur when you first being testing will not be visible.
+
+# CouchDB Configuration
+
+Concurrent performance is really unreliable when running with Delayed Commits on, which as of 0.10 is the default configuration. You'll want to turn this off on order to make concurrent performance more stable over a test run.
+
+
