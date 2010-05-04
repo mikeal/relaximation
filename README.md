@@ -63,6 +63,6 @@ By default all tests will POST the results to http://mikeal.couchone.com/graphs 
   http://mikeal.couchone.com/graphs/_design/app/_show/compareWriteReadTest/c34d5d47f99e11be1f591832d00037e5
 </pre>
 
-![graph](http://mikeal.couchone.com/graphs/c34d5d47f99e11be1f591832d00037e5/Screen%20shot%202010-05-04%20at%203.59.00%20PM.png "Sample Graph")
+![graph](http://mikeal.couchone.com/graphs/c34d5d47f99e11be1f591832d00037e5/cropped.png "Sample Graph")
 
 A few notes about the graph. Lines don't start until the number of clients has ramped up to max level defined for the test, and this is across all recurrences of the same test run. This means that performance problems that might occur when you first being testing will not be visible.
