@@ -1,10 +1,19 @@
+try {
+  require('request');
+} catch(e) {
+  require('sys').debug('You must install request http://github.com/mikeal/node-utils/tree/master/request/')
+  process.exit();
+}
+
 var request = require('request')
   , sys = require('sys');
   
 if (process.argv[process.argv.length - 1].slice(0, 4) === 'http') {
   var uri = process.argv[process.argv.length - 1];
+  sys.debug('DBURI '+uri)
 } else {
   var uri = 'http://localhost:5984/'
+  sys.debug('No DBURI was set, using '+uri)
 }
 
 if (!uri[uri.length - 1] === '/') uri += '/'
