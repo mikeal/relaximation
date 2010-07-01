@@ -19,6 +19,7 @@ if (process.argv[process.argv.length - 1].slice(0, 4) === 'http') {
 if (!uri[uri.length - 1] === '/') uri += '/'
 
 request({uri:uri + '_all_dbs'}, function (error, resp, body) {
+  if (error) throw error
   var dbs = JSON.parse(body)
   if (!dbs.length) throw "Did not get databases "+body;
   var i = 0;
@@ -31,6 +32,7 @@ request({uri:uri + '_all_dbs'}, function (error, resp, body) {
     var db = dbs[i];
     sys.debug('Starting compaction of '+db)
     request({uri:uri + db + '/_compact', method:"POST"}, function (error, resp, body) {
+      if (error) throw error
       if (body !== '{"ok":true}\n') {
         sys.debug('Could not start compaction '+body);
         i += 1;
@@ -38,6 +40,7 @@ request({uri:uri + '_all_dbs'}, function (error, resp, body) {
       }
       var check = function () {
         request({uri:uri + db}, function (error, resp, body) {
+          if (error) throw error
           if (JSON.parse(body).compact_running === true) {
             setTimeout(check, 100)
           } else {
