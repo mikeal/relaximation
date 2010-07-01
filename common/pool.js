@@ -1,5 +1,6 @@
 var net = require('net'),
     sys = require('sys'),
+    Buffer = require('buffer').Buffer,
     url = require('url');
 
 var CRLF = "\r\n";
@@ -52,7 +53,7 @@ function createPool (size, port, hostname, method, pathname, headers, body, stat
     headers.host = hostname + ':' + port
   }
   
-  if (method === 'POST' | method === 'PUT') {
+  if (typeof body !== 'function' && (method === 'POST' | method === 'PUT')) {
     headers['content-length'] = body.length;
   }
   
@@ -76,9 +77,17 @@ function createPool (size, port, hostname, method, pathname, headers, body, stat
       if (!client._starttime) {
         client._starttime = new Date();
       }
-      client.write(method + " " + pathname + " HTTP/1.1\r\n" + messageHeader + CRLF);
-      if (body) {
-        client.write(body, 'binary');
+      if (typeof body === 'function') {
+        var nbody = body();
+        headers['content-length'] = nbody.length;
+        client.write(method + " " + pathname + " HTTP/1.1\r\n" + headerConversion(headers) + CRLF);
+      } else {
+        client.write(method + " " + pathname + " HTTP/1.1\r\n" + messageHeader + CRLF);
+      }
+      if (nbody) {
+        client.write(nbody);
+      } else if (body){
+        client.write(body)
       }
       headbuffer = '';
       bodybuffer = '';
@@ -187,7 +196,8 @@ function createWritePool (size, uri, doc, statusCallback, bodyCallback) {
     if (statusCallback) {
       statusCallback(status);
     }
-    if (status !== 201) {throw new Error("Status is not 201")}
+    if (status === 409) {sys.print('x')}
+    else if (status !== 201) {throw new Error("Status is not 201")}
   }, bodyCallback);
   return p;
 }

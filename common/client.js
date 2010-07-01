@@ -44,7 +44,7 @@ var request = function (uri, method, body, headers, client, encoding, callback) 
   }
   var request = client.request(method, uri.pathname, headers)
   if (body) {
-    request.write(body, 'binary');
+    request.write(body);
   }
   request.addListener("response", function (response) {
     var buffer = '';

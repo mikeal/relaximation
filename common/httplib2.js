@@ -46,7 +46,6 @@ var request = function (uri, method, headers, body, callback) {
     uri.port = 80;
   }
   client = http.createClient(uri.port, uri.hostname);
-  var encoding = guessEncoding(headers['content-encoding'], headers['content-type'])
   
   var clientErrorHandler = function (error) {callback(error ? error : "clientError")}
   
@@ -60,7 +59,7 @@ var request = function (uri, method, headers, body, callback) {
   request.addListener('error', function (error) {callback(error ? error : "requestError")})
     
   if (body) {
-    request.write(body, encoding);
+    request.write(body);
   }
   
   request.addListener("response", function (response) {
