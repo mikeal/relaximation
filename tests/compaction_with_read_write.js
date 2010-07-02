@@ -15,6 +15,7 @@ opts.addOption('-u', '--url', "string", "url", "http://localhost:5984", "CouchDB
 opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
 opts.addOption('-t', '--duration', "number", "duration", 180, "Duration of the run in seconds.");
 opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.");
+opts.addOption('-c', '--compact', "number", "compactTime", 0, "What time to compact. Default is half the duration");
 opts.addOption('-p', '--graph', "string", "graph", "http://mikeal.couchone.com/graphs", "CouchDB to persist results in.");
 
 var port = 8000;
@@ -32,7 +33,7 @@ var sum = function (values) {
 
 var randomnumber=Math.floor(Math.random()*11)
 
-var test = function (url, write_clients, read_clients, doc, duration, poll, callback) {
+var test = function (url, write_clients, read_clients, doc, duration, poll, compactTime, callback) {
   if (url[url.length - 1] != '/') {
     url += '/';
   }
@@ -50,22 +51,26 @@ var test = function (url, write_clients, read_clients, doc, duration, poll, call
       if (error) {
         sys.puts('Cannot cat '+path.join(__dirname, '..', 'common', doc+"_doc.json"));
       } else {
+        doc = doc.toString();
         var starttime = new Date();
         var ids = [];            
         var revs = {};
         var newDoc = true;
-        ndoc = function () {
+        var ndoc = function () {
+          var i;
+          var id;
+          var docn;
           if (newDoc) {
             newDoc = false; 
             return doc;
           } else {
             newDoc = true;
-            var i = Math.floor(Math.random() * (ids.length - 1))
-            var id = ids[i];
-            var doc_ = JSON.parse(doc)
-            doc_._id = id
-            doc_._rev = revs[id]
-            return JSON.stringify(doc_);
+            i = Math.floor(Math.random() * (ids.length - 1))
+            id = ids[i];
+            docn = JSON.parse(doc);
+            docn._id = id;
+            docn._rev = revs[id];
+            return JSON.stringify(docn);
           }
         }
         
@@ -75,10 +80,10 @@ var test = function (url, write_clients, read_clients, doc, duration, poll, call
           request({method:"POST", uri:url+'/_compact'}, function (error, resp, body) {
             sys.debug(body)
           });
-        }, 90 * 1000)
+        }, compactTime * 1000)
         
         
-        var writePool = pool.createWritePool(write_clients, url, doc, undefined, function (resp) {
+        var writePool = pool.createWritePool(write_clients, url, ndoc, undefined, function (resp) {
           resp = JSON.parse(resp);
           if (resp.id) {
             ids.push(resp.id);
@@ -141,7 +146,7 @@ var test = function (url, write_clients, read_clients, doc, duration, poll, call
 exports.test = test;
 
 opts.ifScript(__filename, function(options) {
-  test(options.url, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, function (error, results) {
+  test(options.url, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, options.compactTime ? options.compactTime : options.duration / 2, function (error, results) {
     if (options.graph) {
       body = {results:results, time:new Date(), rclients:options.read_clients, 
               wclients:options.write_clients, doctype:options.doc, duration:options.duration}
