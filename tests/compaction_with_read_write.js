@@ -2,6 +2,7 @@ var sys = require("sys"),
     fs = require("fs"), 
     http2 = require("../common/httplib2"),
     path = require("path"),
+    Buffer = require('buffer').Buffer,
     client = require("../common/client"),
     pool = require("../common/pool"),
     optionparser = require("../common/optionparser"),
@@ -12,8 +13,9 @@ opts.addOption('-w', '--wclients', "number", "write_clients", 50, "Number of con
   opts.addOption('-r', '--rclients', "number", "read_clients", 200, "Number of concurrent read clients per process.");
 opts.addOption('-u', '--url', "string", "url", "http://localhost:5984", "CouchDB url to run tests against.");
 opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
-opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.");
+opts.addOption('-t', '--duration', "number", "duration", 180, "Duration of the run in seconds.");
 opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.");
+opts.addOption('-c', '--compact', "number", "compactTime", 0, "What time to compact. Default is half the duration");
 opts.addOption('-p', '--graph', "string", "graph", "http://mikeal.couchone.com/graphs", "CouchDB to persist results in.");
 
 var port = 8000;
@@ -31,7 +33,7 @@ var sum = function (values) {
 
 var randomnumber=Math.floor(Math.random()*11)
 
-var test = function (url, write_clients, read_clients, doc, duration, poll, callback) {
+var test = function (url, write_clients, read_clients, doc, duration, poll, compactTime, callback) {
   if (url[url.length - 1] != '/') {
     url += '/';
   }
@@ -43,18 +45,49 @@ var test = function (url, write_clients, read_clients, doc, duration, poll, call
       sys.puts("Error "+error);
       throw(error)
     } else if (response.statusCode != 201) {
-      sys.puts("Could not create database "+response.statusCode+" "+buffer);
+      // sys.puts("Could not create database "+response.statusCode+" "+buffer);
     }
     fs.readFile(path.join(__dirname, '..', 'common', doc+"_doc.json"), function (error, doc) {
       if (error) {
         sys.puts('Cannot cat '+path.join(__dirname, '..', 'common', doc+"_doc.json"));
       } else {
+        doc = doc.toString();
         var starttime = new Date();
         var ids = [];            
-        var writePool = pool.createWritePool(write_clients, url, doc, undefined, function (resp) {
+        var revs = {};
+        var newDoc = true;
+        var ndoc = function () {
+          var i;
+          var id;
+          var docn;
+          if (newDoc) {
+            newDoc = false; 
+            return doc;
+          } else {
+            newDoc = true;
+            i = Math.floor(Math.random() * (ids.length - 1))
+            id = ids[i];
+            docn = JSON.parse(doc);
+            docn._id = id;
+            docn._rev = revs[id];
+            return JSON.stringify(docn);
+          }
+        }
+        
+        // Trigger compaction at 90 seconds
+        setTimeout(function () {
+          var request = require('request');
+          request({method:"POST", uri:url+'/_compact'}, function (error, resp, body) {
+            sys.debug(body)
+          });
+        }, compactTime * 1000)
+        
+        
+        var writePool = pool.createWritePool(write_clients, url, ndoc, undefined, function (resp) {
           resp = JSON.parse(resp);
           if (resp.id) {
             ids.push(resp.id);
+            revs[resp.id] = resp.rev
           }
         });
         
@@ -113,7 +146,7 @@ var test = function (url, write_clients, read_clients, doc, duration, poll, call
 exports.test = test;
 
 opts.ifScript(__filename, function(options) {
-  test(options.url, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, function (error, results) {
+  test(options.url, options.write_clients, options.read_clients, options.doc, options.duration, options.poll, options.compactTime ? options.compactTime : options.duration / 2, function (error, results) {
     if (options.graph) {
       body = {results:results, time:new Date(), rclients:options.read_clients, 
               wclients:options.write_clients, doctype:options.doc, duration:options.duration}

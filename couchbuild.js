@@ -145,16 +145,20 @@ exports.subprocess = subprocess;
 exports.queue = queue;
 exports.parallel = parallel;
 
-// builder([
-//   {name:"file_work", 
-//    giturl:"git://github.com/Damienkatz/couchdb.git",
-//    gitcheckout:"57904bb1030260b91f18668b3ffbadd7ed954e0d",
-//    arch:"darwin",
-//   },
-//   {name:"trunk",
-//    giturl:"git://github.com/apache/couchdb.git",
-//    gitcheckout:"HEAD",
-//    arch:"darwin", 
-//    port:5985,
-//   },
-//   ], path.join(__dirname, "builds"))
+if (require.main && require.main === module) {
+  builder([
+    {name:"file_work", 
+     giturl:"git://github.com/Damienkatz/couchdb.git",
+     gitcheckout:"57904bb1030260b91f18668b3ffbadd7ed954e0d",
+     arch:"darwin",
+    },
+    {name:"trunk",
+     giturl:"git://github.com/apache/couchdb.git",
+     gitcheckout:"HEAD",
+     arch:"darwin", 
+     port:5985,
+    },
+    ], path.join(__dirname, "builds"))
+}
+
+

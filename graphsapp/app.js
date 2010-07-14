@@ -33,6 +33,8 @@ ddoc.shows.compareWriteTest = function (doc, req) {
   var body = [mustache.to_html(this.templates['head.mustache'], {path:ddocPath}), 
               mustache.to_html(this.templates['compareWriteTest.mustache'], {results:JSON.stringify(doc.results),
                                                                              recurrence:doc.recurrence,
+                                                                             name1:doc.results[0].name,
+                                                                             name2:doc.results[1].name,
                                                                              clients:doc.clients}),
               this.templates['foot.mustache']];
   return body.join('\n')

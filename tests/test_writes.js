@@ -1,8 +1,9 @@
 var sys = require("sys");
 var fs = require("fs");
 var http2 = require("../common/httplib2");
-var path = require("path")
+var path = require("path");
 var client = require("../common/client");
+var pool = require("../common/pool");
 var optionparser = require("../common/optionparser");
 var events = require('events');
 var opts = new optionparser.OptionParser();
@@ -11,7 +12,7 @@ opts.addOption('-u', '--url', "string", "url", "http://localhost:5984", "CouchDB
 opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
 opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.")
 opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.")
-opts.addOption('-p', '--graph', "string", "graph", null, "CouchDB to persist results in.")
+opts.addOption('-p', '--graph', "string", "graph", "http://mikeal.couchone.com/graphs", "CouchDB to persist results in.")
 
 var port = 8000;
 var ports = [];
@@ -31,6 +32,7 @@ var testWrites = function (url, clients, doc, duration, poll, callback) {
     url += '/';
   }
   url += 'testwritesdb';
+  
   var results = [];
   http2.request(url, 'PUT', {'accept':'application/json'}, undefined, function (error, response, buffer) {
     if (error) {
@@ -38,19 +40,17 @@ var testWrites = function (url, clients, doc, duration, poll, callback) {
       throw(error)
     } else if (response.statusCode != 201) {
       sys.puts("Could not create database "+response.statusCode+" "+buffer);
-      throw(error)
     }
-    fs.readFile(path.join('..', 'common', doc+"_doc.json"), function (error, doc) {
+    fs.readFile(path.join(__dirname, '..', 'common', doc+"_doc.json"), function (error, doc) {
       if (error) {
         sys.puts('Cannot cat'+path.join('..', 'common', doc+"_doc.json"));
         process.exit(1);
       }
       var starttime = new Date();
-      var pool = new client.Pool(clients);
-      pool.startWriters(url, doc)
+      var p = pool.createWritePool(clients, url, doc);
       var poller = setInterval(function(){
         var time = (new Date() - starttime) / 1000
-        var w = pool.getTimeInfo();
+        var w = p.average();
         
         w.meantimes.sort()
         w.starttimes.sort()
@@ -67,7 +67,7 @@ var testWrites = function (url, clients, doc, duration, poll, callback) {
       setTimeout(function(){
         clearInterval(poller);
         // uri, method, body, headers, client, encoding, callback
-        pool.stop(function () {
+        p.stop(function () {
           client.request(url, 'DELETE', undefined, undefined, undefined, undefined, function (error) {
             callback(error, results)
           })
@@ -85,7 +85,8 @@ opts.ifScript(__filename, function(options) {
       body = {'results':results, time:new Date(), clients:options.clients, doctype:options.doc, duration:options.duration}
       client.request(options.graph, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
         function (error, response, body) {
-          if (response.statusCode != 201) {sys.puts('bad!')}
+          if (error) {throw new Error(error)}
+          if (response.statusCode != 201) {throw new Error(error + ' Status ' + response.statusCode + '\n' + body)}
           else {sys.puts(options.graph+'/'+'_design/app/_show/writeTest/'+JSON.parse(body)['id'])}
           process.exit();
         }

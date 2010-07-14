@@ -1,12 +1,13 @@
 var testModule = require('./test_writes')
 
-var sys = require("sys");
-var fs = require("fs");
-var http2 = require("../common/httplib2");
-var path = require("path")
-var client = require("../common/client");
-var optionparser = require("../common/optionparser");
-var events = require('events');
+var sys = require("sys"),
+    fs = require("fs"),
+    http2 = require("../common/httplib2"),
+    path = require("path"),
+    client = require("../common/client"),
+    optionparser = require("../common/optionparser"),
+    events = require('events');
+
 var opts = new optionparser.OptionParser();
 opts.addOption('-c', '--clients', "number", "clients", 100, "Number of concurrent clients per process.");
 opts.addOption('-u', '--url1', "string", "url1", "http://localhost:5984", "CouchDB url to run tests against.");
@@ -16,7 +17,7 @@ opts.addOption('-2', '--name2', "string", "name2", null, "Name of first comparat
 opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
 opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.")
 opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.")
-opts.addOption('-p', '--graph', "string", "graph", "http://couchdb.couchdb.org/graphs", "CouchDB to persist results in.")
+opts.addOption('-p', '--graph', "string", "graph", "http://mikeal.couchone.com/graphs", "CouchDB to persist results in.")
 opts.addOption('-r', '--recurrence', "number", "recurrence", 5, "How many times to run the tests.")
 
 var port = 8000;

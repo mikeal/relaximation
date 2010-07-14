@@ -39,9 +39,12 @@ var request = function (uri, method, body, headers, client, encoding, callback) 
     headers.authorization = "Basic " + base64.encode(uri.auth);
   }
   var pathname = uri.search ? (uri.pathname + uri.search) : uri.pathname
+  if (body) {
+    headers['content-length'] = body.length;
+  }
   var request = client.request(method, uri.pathname, headers)
   if (body) {
-    request.write(body, encoding);
+    request.write(body);
   }
   request.addListener("response", function (response) {
     var buffer = '';
@@ -53,7 +56,7 @@ var request = function (uri, method, body, headers, client, encoding, callback) 
       callback(undefined, response, buffer);
     })
   })
-  request.close()
+  request.end()
 }
 
 var Pool = function (limit) {
@@ -114,7 +117,7 @@ Pool.prototype.doClient = function (address, port, pathname, method, body, expec
     })
     response.addListener("close", function() {sys.puts('bad things!')})
   })
-  r.close()
+  r.end()
 }
 Pool.prototype.getMeantime = function () {
   var active = []
@@ -165,7 +168,7 @@ Pool.prototype.startWriters = function (urlString, doc) {
 }
 Pool.prototype.stop = function (callback) {
   this.running = false;
-  this.clients.forEach(function(c) {c.close(); c.forceClose()});
+  this.clients.forEach(function(c) {c.end(); c.forceClose()});
   if (callback) { callback() }
 }
 
