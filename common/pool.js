@@ -72,17 +72,19 @@ function createPool (size, port, hostname, method, pathname, headers, body, stat
         client.end();
         return false;
       }
-      if (typeof method === 'function') {method = method()}
-      if (typeof pathname === 'function') {pathname = pathname()} 
+      if (typeof method === 'function') {meth = method()}
+      else {meth = method};
+      if (typeof pathname === 'function') {path = url.parse(pathname()).pathname} 
+      else {path = pathname};
       if (!client._starttime) {
         client._starttime = new Date();
       }
       if (typeof body === 'function') {
         var nbody = body();
         headers['content-length'] = nbody.length;
-        client.write(method + " " + pathname + " HTTP/1.1\r\n" + headerConversion(headers) + CRLF);
+        client.write(meth + " " + path + " HTTP/1.1\r\n" + headerConversion(headers) + CRLF);
       } else {
-        client.write(method + " " + pathname + " HTTP/1.1\r\n" + messageHeader + CRLF);
+        client.write(meth + " " + path + " HTTP/1.1\r\n" + messageHeader + CRLF);
       }
       if (nbody) {
         client.write(nbody);
