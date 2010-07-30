@@ -69,6 +69,16 @@ opts.ifScript(__filename, function(options) {
         // client.request(url, 'DELETE', undefined, undefined, undefined, undefined, function (error) {
         //   callback(error, results)
         // })
+        body = {results:results, time:new Date(),  
+                clients:options.clients, duration:options.duration}
+        client.request(options.graph, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
+          function (error, response, body) {
+            if (error) {throw new Error(error)}
+            if (response.statusCode != 201) {throw new Error(error + ' Status ' + response.statusCode + '\n' + body)}
+            else {sys.puts(options.graph+'/'+'_design/app/_show/readTest/'+JSON.parse(body)['id'])}
+            process.exit();
+          }
+        )
       })
     }, options.duration * 1000);
     
