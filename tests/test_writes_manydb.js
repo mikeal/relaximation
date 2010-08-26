@@ -22,7 +22,7 @@ exports.testWritesToMany = function (options, cb) {
         sys.debug('Could not create database. '+body);
       }
       pools.push(pool.createPool({uri: u+'/', method: 'POST', body:options.body, 
-                                  headers: h, count:options.dbs}, function (e, o, resp, body) {
+                                  headers: h, count:options.clients}, function (e, o, resp, body) {
         if (e) throw e;
         if (resp.statusCode !== 201) throw new Error("Did not create document. "+body);
       }));
@@ -36,14 +36,14 @@ exports.testWritesToMany = function (options, cb) {
       ;
     for (var i=0;i<pools.length;i+=1) {
       var p = pools[i].poll();
-      r.clients = p.times.length;
+      r.clients += p.times.length;
       r.totalRequests += p.totalRequests;
-      for (var y=0;y<p.times;y+=1) {
+      for (var y=0;y<p.times.length;y+=1) {
         r.average += p.times[y];
         timesCount += 1;
       }
     }
-    r.averages = r.averages / timesCount;
+    r.average = (r.average / timesCount);
     starts.sort();
     r.oldest = starts[0];
     r.last = starts[starts.length - 1]
@@ -62,28 +62,28 @@ exports.testWritesToMany = function (options, cb) {
 if (require.main === module) {
   var cmdopts = require('../common/cmdopts')
     , opts = cmdopts.createOptions({
-    clients :    { short: "c", default: 100,                
+    clients :    { short: "c", "default": 50,                
                    help: "Number of concurrent clients per database."
                  }
-    , dbs :      { short: "n", default: 2, 
+    , dbs :      { short: "n", "default": 2, 
                    help: "Number of databases to write to."
                  }
-    , url :      { short: "u", default: "http://localhost:5984",
+    , url :      { short: "u", "default": "http://localhost:5984",
                    help: "CouchDB url to run tests against."
                  }
-    , doc :      { short: "d", default: "small",
+    , doc :      { short: "d", "default": "small",
                    help: "small or large doc."
                  }
-    , duration : { short: "t", default: 60,          
+    , duration : { short: "t", "default": 60,          
                    help: "Duration of the run in seconds."
                  }
-    , graph :    { short: "g", default: "http://mikeal.couchone.com/graphs", 
+    , graph :    { short: "g", "default": "http://mikeal.couchone.com/graphs", 
                    help: "CouchDB to persist results in."
                  }
   });
 
   exports.testWritesToMany(opts.run(), function (obj) {
-    if (obj) {sys.puts(sys.inspect(obj))}
+    if (obj) {sys.puts(JSON.stringify(obj))}
     else {sys.debug('END')}
   })
 

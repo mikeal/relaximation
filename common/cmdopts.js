@@ -32,17 +32,17 @@ exports.Options.prototype.help = function () {
   process.exit();
 }
 exports.Options.prototype.add = function (def) {
-  if (def.default !== undefined) {
-    if (def.default === true || def.default === false) def.type = 'bool';
-    else if (typeof def.default === 'number') def.type = 'number';
-    else if (typeof def.default === 'string') def.type = 'string';
+  if (def["default"] !== undefined) {
+    if (def["default"] === true || def["default"] === false) def.type = 'bool';
+    else if (typeof def["default"] === 'number') def.type = 'number';
+    else if (typeof def["default"] === 'string') def.type = 'string';
   }
   
   this.registry[def.name] = def;
   if (def.short) this.registry[def.short] = def;
 }
 exports.Options.prototype._handle = function (name, value) {
-  if (this.registry[name].type === 'bool') return !this.registry.default;
+  if (this.registry[name].type === 'bool') return !this.registry["default"];
   if (this.registry[name].type === 'number') {
     if (value.indexOf('.') !== -1) return parseFloat(value);
     else return parseInt(value);
@@ -54,7 +54,7 @@ exports.Options.prototype.run = function () {
     , results = {}
     ;
     
-  for (i in this.registry) results[i] = this.registry[i].default;
+  for (i in this.registry) results[i] = this.registry[i]["default"];
   args.shift();
   results.scriptName = args.shift();
   
@@ -64,7 +64,7 @@ exports.Options.prototype.run = function () {
     if (['help', '-h', '--help'].indexOf(args[0]) !== -1) return this.help();
     
     if (args[0].slice(0, '--'.length) == '--')  {
-      var name = args[0].shift().slice('--'.length);
+      var name = args.shift().slice('--'.length);
       if (name.indexOf('=') !== -1) {
         value = name.slice(name.indexOf('=') + 1); 
         name = name.slice(0, name.indexOf('=')); 
@@ -72,7 +72,7 @@ exports.Options.prototype.run = function () {
         if (this.registry[name].type !== 'bool') value = args.shift();
       }
       results[name] = this._handle(name, value);
-    } else if (args[0].slice(0, '-'.length) == '-')  {
+    } else if (args.slice(0, '-'.length) == '-')  {
       var name = args[0].shift().slice('-'.length);
       if (name.indexOf('=') !== -1) {
         value = name.slice(name.indexOf('=') + 1); 

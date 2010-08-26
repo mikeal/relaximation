@@ -21,11 +21,11 @@ exports.createPool = function (options, callback) {
       , endtimes = []
       , current = new Date()
       ;
-    for (var i=0;i<pool.pools;i+=1) {
+    for (var i=0;i<pool.pools.length;i+=1) {
       var o = pool.pools[i];
       if (o.endtime) {
-        startttimes.push(o.starttime);
-        endtime.push(o.endtime);
+        starttimes.push(o.starttime);
+        endtimes.push(o.endtime);
         times.push(o.endtime - o.starttime);
       }
       total += o.totalRequests;
@@ -41,24 +41,25 @@ exports.createPool = function (options, callback) {
   
   if (!options.headers) options.headers = {};
   options.headers.connection = 'keep-alive';
-  if (!options.delay) options.delay = 0;
+  if (!options.delay) options.delay = 1;
   
   var d = 0;
-  
   for (var i=0;i<options.count;i+=1) {
     d += options.delay;  
-    var opts = {totalRequests:0};
-    for (i in options) opts[i] = options[i];
-    var cb = function (error, resp, body) { 
-      opts.starttime = opts._starttime;
-      opts.endtime = new Date();
-      opts.totalRequests += 1;
-      if (opts.callback) opts.callback(error, opts, resp, body);
-      opts._starttime = new Date();
-      request(opts, cb)
-    }
-    setTimeout(function () {request(opts, cb);}, d)
-    pool.pools.push(opts);
+    setTimeout(function () {
+      var opts = {totalRequests:0};
+      pool.pools.push(opts);
+      for (x in options) if (x !== 'client') opts[x] = options[x];
+      var cb = function (error, resp, body) { 
+        opts.starttime = opts._starttime;
+        opts.endtime = new Date();
+        opts.totalRequests += 1;
+        if (opts.callback) opts.callback(error, opts, resp, body);
+        opts._starttime = new Date();
+        request(opts, cb)
+      }
+      request(opts, cb);
+    }, d)
   }
   
   return pool;
