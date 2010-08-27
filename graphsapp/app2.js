@@ -1,0 +1,15 @@
+var couchapp = require('couchapp')
+  , path = require('path')
+  ;
+
+ddoc = { _id:'_design/app2'
+  , rewrites : [
+        {from:"/", to:'sammy.html'}
+      , {from:"/api/*", to:'../../*'}
+      , {from:"/*", to:'*'}
+    ]
+  }
+
+couchapp.loadAttachments(ddoc, path.join(__dirname, 'attachments'))
+
+exports.app = ddoc

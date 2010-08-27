@@ -36,8 +36,8 @@ var testWrites = function (url, clients, doc, duration, poll, callback) {
   var results = [];
   http2.request(url, 'PUT', {'accept':'application/json'}, undefined, function (error, response, buffer) {
     if (error) {
-      sys.puts("Error "+error);
-      throw(error)
+      // sys.puts("Error "+error);
+      // throw(error)
     } else if (response.statusCode != 201) {
       sys.puts("Could not create database "+response.statusCode+" "+buffer);
     }
@@ -68,9 +68,9 @@ var testWrites = function (url, clients, doc, duration, poll, callback) {
         clearInterval(poller);
         // uri, method, body, headers, client, encoding, callback
         p.stop(function () {
-          client.request(url, 'DELETE', undefined, undefined, undefined, undefined, function (error) {
+          // client.request(url, 'DELETE', undefined, undefined, undefined, undefined, function (error) {
             callback(error, results)
-          })
+          // })
         })
       }, duration * 1000);
     })

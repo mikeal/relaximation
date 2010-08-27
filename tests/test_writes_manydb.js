@@ -11,6 +11,7 @@ exports.testWritesToMany = function (options, cb) {
   var count = 0
     , pools = []
     , body = fs.readFileSync(path.join(__dirname, '..', 'common', options.doc+'_doc.json'))
+    , runstart = new Date()
     ;
   options.body = body;
   if (options.url[options.url.length - 1] !== '/') options.url += '/'
@@ -28,9 +29,11 @@ exports.testWritesToMany = function (options, cb) {
       }));
     })
   }
-  var clockStart = new Date();
+  var clockStart = new Date()
+    , results = []
+    ;
   var interval = setInterval(function () {
-    var r = {clients: 0, totalRequests: 0, average: 0}
+    var r = {timeline:(new Date() - runstart), clients: 0, totalRequests: 0, average: 0 }
       , starts = []
       , timesCount = 0
       ;
@@ -48,6 +51,7 @@ exports.testWritesToMany = function (options, cb) {
     r.oldest = starts[0];
     r.last = starts[starts.length - 1]
     cb(r)
+    
   }, 1000)
   
   setTimeout(function () {
@@ -77,14 +81,29 @@ if (require.main === module) {
     , duration : { short: "t", "default": 60,          
                    help: "Duration of the run in seconds."
                  }
-    , graph :    { short: "g", "default": "http://mikeal.couchone.com/graphs", 
+    , graph :    { short: "g", "default": "http://graphs:5984/api", 
                    help: "CouchDB to persist results in."
                  }
   });
-
-  exports.testWritesToMany(opts.run(), function (obj) {
-    if (obj) {sys.puts(JSON.stringify(obj))}
-    else {sys.debug('END')}
+  
+  var options = opts.run();
+  options.results = [];
+  options.type = 'test_writes_manydb.js'
+  delete options.body
+  
+  exports.testWritesToMany(options, function (obj) {
+    if (obj) {
+      sys.puts(JSON.stringify(obj));
+      options.results.push(obj)
+    }
+    else {
+      var body = JSON.stringify(options)
+        , headers = {accept:'application/json', 'content-type':'application/json'}
+        ;
+      request({uri:options.graph, method:'POST', body:body, headers:headers}, function (err, resp, body) {
+        sys.puts(body);
+      })
+    }
   })
 
 }
