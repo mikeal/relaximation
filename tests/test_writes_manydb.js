@@ -24,11 +24,13 @@ exports.testWritesToMany = function (options, cb) {
       if (resp.statusCode !== 201) {
         sys.print('Could not create database. '+body);
       }
-      pools.push(pool.createPool({uri: uris[x]+'/', method: 'POST', body:options.body, 
+      var p = pool.createPool({uri: uris[x]+'/', method: 'POST', body:options.body, 
                                   headers: h, count:options.clients}, function (e, o, resp, body) {
         if (e) throw e;
         if (resp.statusCode !== 201) throw new Error("Did not create document. "+body);
-      }));
+      });
+      pools.push(p);
+      p.uri = uris[x];
       x += 1;
     })
   }
@@ -60,7 +62,12 @@ exports.testWritesToMany = function (options, cb) {
   setTimeout(function () {
     clearInterval(interval);
     for (var i=0;i<pools.length;i+=1) {
-      pools[i].end();
+      pools[i].end(function (pool) {
+        request({uri:pool.uri, method:'DELETE'}, function (err, resp, body) {
+          if (err) throw err;
+          if (resp.statusCode !== 200) sys.print("Could not delete database. "+body)
+        })
+      });
     }
     cb(null);
   }, 1000 * options.duration);
@@ -104,13 +111,6 @@ if (require.main === module) {
         , headers = {accept:'application/json', 'content-type':'application/json'}
         ;
       if (options.graph[options.graph.length -1] !== '/') options.graph += '/';
-      
-      for (var i;i<options.dbs;i+=1) {
-        request({uri:(options.url + 'testwritesdb' + i)}, function (err, resp, body) {
-          if (err) throw err;
-          if (resp.status !== 200) sys.print("Could not delete database. "+body)
-        })
-      }
       
       request({uri:options.graph+'api', method:'POST', body:body, headers:headers}, function (err, resp, body) {
         var info = JSON.parse(body);

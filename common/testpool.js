@@ -32,8 +32,9 @@ exports.createPool = function (options, callback) {
     } 
     return {times:times, starttimes:starttimes, endtime:endtimes, totalRequests:total};
   }
-  pool.end = function () {
+  pool.end = function (cb) {
     pool.running = false;
+    pool.endCallback = cb;
     // for (var i=0;i<pool.pools;i+=1) {
     //   pool.pools[i].client.close();
     // }
@@ -44,6 +45,7 @@ exports.createPool = function (options, callback) {
   if (!options.delay) options.delay = 1;
   
   var d = 0;
+  var closed = 0;
   for (var i=0;i<options.count;i+=1) {
     d += options.delay;  
     setTimeout(function () {
@@ -60,6 +62,10 @@ exports.createPool = function (options, callback) {
           request(opts, cb);
         } else {
           opts.client.end();
+          closed += 1;
+          if (closed === pool.pools.length) {
+            if (pool.endCallback) pool.endCallback(pool);
+          }
         }
       }
       request(opts, cb);
