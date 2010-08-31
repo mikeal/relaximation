@@ -98,7 +98,7 @@ if (require.main === module) {
   
   var options = opts.run();
   options.results = [];
-  options.type = 'test_writes_manydb.js'
+  options.type = 'test'
   delete options.body
   
   exports.testWritesToMany(options, function (obj) {

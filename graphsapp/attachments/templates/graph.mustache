@@ -3,37 +3,3 @@
 <div id="graphcontainer">
   <div id="placeholder" style="width:1000px;height:500px;"></div>
 </div>
-
-<script id="source" language="javascript" type="text/javascript">
-
-// 
-// $.ajax({dataType:'json',
-//         success:function(alldocs){
-//           alldocs.rows.forEach(function(doc) {
-//             if (doc.id[0] != '_') {
-//               var id = doc.id
-//               var doc = doc.doc;
-//               var text = id+' '+doc.time+' '+doc.clients+' '+doc.duration+' '+doc.doctype
-//               $('<a href="#" onclick="javascript:update(\''+id+'\')">'+text+'</a><br>').appendTo('div#resultlist');
-//             }
-//           })
-//         },
-//         url:'/results/_all_docs?include_docs=true',
-//         })
-// 
-// var update = function (id) {
-//   $.ajax({dataType:'json',
-//          success:function(resultdoc) {
-//            var d = []
-//            resultdoc.results.forEach(function(r){
-//              if (r.clients == resultdoc.clients) {
-//                d.push([r.time, r.averagetime])
-//              }
-//            });
-//            $.plot($("#placeholder"), [ d ]);
-//          },
-//          url:'/results/'+id,
-//         });
-// }
- 
-</script>

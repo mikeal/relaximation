@@ -19,7 +19,9 @@ app.showGraph = function (id) {
   request({url:'/api/'+id}, function (err, doc) {
     if (err) throw err;
     var s = doc.scriptName.split('/');
-    if (s[s.length - 1] == 'test_writes_manydb.js') {
+        s = s[s.length - 1];
+    $('#graphType').text(s); 
+    if (s === 'test_writes_manydb.js') {
       var line = [];
       doc.results.forEach(function (r) {
         if (r.clients == (doc.clients * doc.dbs)) {
