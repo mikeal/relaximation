@@ -72,8 +72,8 @@ exports.Options.prototype.run = function () {
         if (this.registry[name].type !== 'bool') value = args.shift();
       }
       results[name] = this._handle(name, value);
-    } else if (args.slice(0, '-'.length) == '-')  {
-      var name = args[0].shift().slice('-'.length);
+    } else if (args[0].slice(0, '-'.length) === '-')  {
+      var name = args.shift().slice('-'.length);
       if (name.indexOf('=') !== -1) {
         value = name.slice(name.indexOf('=') + 1); 
         name = name.slice(0, name.indexOf('=')); 

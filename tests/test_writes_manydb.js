@@ -14,19 +14,22 @@ exports.testWritesToMany = function (options, cb) {
     , runstart = new Date()
     ;
   options.body = body;
-  if (options.url[options.url.length - 1] !== '/') options.url += '/'
+  if (options.url[options.url.length - 1] !== '/') options.url += '/';
+  var uris = [];
+  var x = 0;
   for (var i=0;i<options.dbs;i+=1) {
-    var u = (options.url + 'testwritesdb' + i);
-    request({uri: u, method: "PUT", headers: h}, function (error, resp, body) {
+    uris[i] = (options.url + 'testwritesdb' + i);
+    request({uri: uris[i], method: "PUT", headers: h}, function (error, resp, body) {
       if (error) throw error;
       if (resp.statusCode !== 201) {
-        sys.debug('Could not create database. '+body);
+        sys.print('Could not create database. '+body);
       }
-      pools.push(pool.createPool({uri: u+'/', method: 'POST', body:options.body, 
+      pools.push(pool.createPool({uri: uris[x]+'/', method: 'POST', body:options.body, 
                                   headers: h, count:options.clients}, function (e, o, resp, body) {
         if (e) throw e;
         if (resp.statusCode !== 201) throw new Error("Did not create document. "+body);
       }));
+      x += 1;
     })
   }
   var clockStart = new Date()
@@ -81,7 +84,7 @@ if (require.main === module) {
     , duration : { short: "t", "default": 60,          
                    help: "Duration of the run in seconds."
                  }
-    , graph :    { short: "g", "default": "http://graphs:5984/api", 
+    , graph :    { short: "g", "default": "http://graphs.mikeal.couchone.com", 
                    help: "CouchDB to persist results in."
                  }
   });
@@ -100,8 +103,19 @@ if (require.main === module) {
       var body = JSON.stringify(options)
         , headers = {accept:'application/json', 'content-type':'application/json'}
         ;
-      request({uri:options.graph, method:'POST', body:body, headers:headers}, function (err, resp, body) {
-        sys.puts(body);
+      if (options.graph[options.graph.length -1] !== '/') options.graph += '/';
+      
+      for (var i;i<options.dbs;i+=1) {
+        request({uri:(options.url + 'testwritesdb' + i)}, function (err, resp, body) {
+          if (err) throw err;
+          if (resp.status !== 200) sys.print("Could not delete database. "+body)
+        })
+      }
+      
+      request({uri:options.graph+'api', method:'POST', body:body, headers:headers}, function (err, resp, body) {
+        var info = JSON.parse(body);
+        sys.puts(options.graph+'#/graph/'+info.id);
+        
       })
     }
   })

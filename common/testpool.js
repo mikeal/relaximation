@@ -34,9 +34,9 @@ exports.createPool = function (options, callback) {
   }
   pool.end = function () {
     pool.running = false;
-    for (var i=0;i<pool.pools;i+=1) {
-      pool.pools[i].client.close();
-    }
+    // for (var i=0;i<pool.pools;i+=1) {
+    //   pool.pools[i].client.close();
+    // }
   }
   
   if (!options.headers) options.headers = {};
@@ -56,7 +56,11 @@ exports.createPool = function (options, callback) {
         opts.totalRequests += 1;
         if (opts.callback) opts.callback(error, opts, resp, body);
         opts._starttime = new Date();
-        request(opts, cb)
+        if (pool.running) {
+          request(opts, cb);
+        } else {
+          opts.client.end();
+        }
       }
       request(opts, cb);
     }, d)
