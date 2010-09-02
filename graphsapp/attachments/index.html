@@ -1,55 +1,21 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
- <head>
+  <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Result</title>
-    <link href="layout.css" rel="stylesheet" type="text/css"></link>
-    <!--[if IE]><script language="javascript" type="text/javascript" src="../excanvas.min.js"></script><![endif]-->
-    <script language="javascript" type="text/javascript" src="jquery-1.4.1.min.js"></script>
+    <title>Couch Graphs</title>
+    <link href="layout.css" rel="stylesheet" type="text/css" />
+    <script language="javascript" type="text/javascript" src="jquery-1.4.2.min.js"></script>
+    <script language="javascript" type="text/javascript" src="sammy/sammy.js"></script>
+    <script language="javascript" type="text/javascript" src="sammy/plugins/sammy.mustache.js"></script>
     <script language="javascript" type="text/javascript" src="flot/jquery.flot.js"></script>
+    <script language="javascript" type="text/javascript" src="graphs.js"></script>
 
- </head>
-    <body>
-    <h1>Test</h1>
-    
-    <div id="graphcontainer">
-      <div id="placeholder" style="width:600px;height:300px;"></div>
+  </head>
+  <body>
+    <div id="content">
+      <!-- This is the main content space we continuously replace -->
     </div>
-    
-    <div id="resultlist"></div>
-    <p>Click Test id for graph.</p>
-
-<script id="source" language="javascript" type="text/javascript">
-$.ajax({dataType:'json',
-        success:function(alldocs){
-          alldocs.rows.forEach(function(doc) {
-            if (doc.id[0] != '_') {
-              var id = doc.id
-              var doc = doc.doc;
-              var text = id+' '+doc.time+' '+doc.clients+' '+doc.duration+' '+doc.doctype
-              $('<a href="#" onclick="javascript:update(\''+id+'\')">'+text+'</a><br>').appendTo('div#resultlist');
-            }
-          })
-        },
-        url:'/results/_all_docs?include_docs=true',
-        })
-
-var update = function (id) {
-  $.ajax({dataType:'json',
-         success:function(resultdoc) {
-           var d = []
-           resultdoc.results.forEach(function(r){
-             if (r.clients == resultdoc.clients) {
-               d.push([r.time, r.averagetime])
-             }
-           });
-           $.plot($("#placeholder"), [ d ]);
-         },
-         url:'/results/'+id,
-        });
-}
- 
-</script>
-
- </body>
+  </body>
 </html>
+
+

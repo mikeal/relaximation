@@ -54,7 +54,7 @@
     if (args.length === 0 || args[0] && _isFunction(args[0])) { // Sammy()
       return Sammy.apply(Sammy, ['body'].concat(args));
     } else if (typeof (selector = args.shift()) == 'string') { // Sammy('#main')
-      app = Sammy.apps[selector] || new Sammy.Application(args.shift());
+      app = Sammy.apps[selector] || new Sammy.Application();
       app.element_selector = selector;
       if (args.length > 0) {
         $.each(args, function(i, plugin) {
@@ -70,7 +70,7 @@
     }
   };
 
-  Sammy.VERSION = '0.6.0pre';
+  Sammy.VERSION = '0.6.0';
 
   // Add to the global logger pool. Takes a function that accepts an
   // unknown number of arguments and should print them or send them somewhere
@@ -1156,12 +1156,20 @@
       return returned;
     },
 
+    _getFormVerb: function(form) {
+      var $form = $(form), verb;
+      $_method = $form.find('input[name="_method"]');
+      if ($_method.length > 0) { verb = $_method.val(); }
+      if (!verb) { verb = $form[0].getAttribute('method'); }
+      return $.trim(verb.toString().toLowerCase());
+    },
+
     _checkFormSubmission: function(form) {
       var $form, path, verb, params, returned;
       this.trigger('check-form-submission', {form: form});
       $form = $(form);
       path  = $form.attr('action');
-      verb  = $.trim($form.attr('method').toString().toLowerCase());
+      verb  = this._getFormVerb($form);
       if (!verb || verb == '') { verb = 'get'; }
       this.log('_checkFormSubmission', $form, path, verb);
       if (verb === 'get') {
@@ -1447,7 +1455,7 @@
         data = name;
         name = null;
       }
-      if (!data && _isArray(this.content)) { 
+      if (!data && _isArray(this.content)) {
         data = this.content;
       }
       return this.load(location).collect(data, function(i, value) {
@@ -1478,14 +1486,21 @@
     swap: function() {
       return this.then(function(content) {
         this.event_context.swap(content);
-      });
+      }).trigger('changed', {});
     },
 
     // Same usage as `jQuery.fn.appendTo()` but uses `then()` to ensure order
     appendTo: function(selector) {
       return this.then(function(content) {
         $(selector).append(content);
-      });
+      }).trigger('changed', {});
+    },
+
+    // Same usage as `jQuery.fn.prependTo()` but uses `then()` to ensure order
+    prependTo: function(selector) {
+      return this.then(function(content) {
+        $(selector).prepend(content);
+      }).trigger('changed', {});
     },
 
     // Replaces the `$(selector)` using `html()` with the previously loaded
@@ -1493,6 +1508,16 @@
     replace: function(selector) {
       return this.then(function(content) {
         $(selector).html(content);
+      }).trigger('changed', {});
+    },
+
+    // trigger the event in the order of the event context. Same semantics
+    // as `Sammy.EventContext#trigger()`. If data is ommitted, `content`
+    // is sent as `{content: content}`
+    trigger: function(name, data) {
+      return this.then(function(content) {
+        if (typeof data == 'undefined') { data = {content: content}; }
+        this.event_context.trigger(name, data);
       });
     }
 
