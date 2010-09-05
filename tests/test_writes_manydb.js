@@ -38,23 +38,40 @@ exports.testWritesToMany = function (options, cb) {
     , results = []
     ;
   var interval = setInterval(function () {
-    var r = {timeline:(new Date() - runstart), clients: 0, totalRequests: 0, average: 0 }
+    var t = (new Date() - runstart)
+      , r = { all: {timeline: t, clients: 0, totalRequests: 0, average: 0 }}
       , starts = []
       , timesCount = 0
       ;
     for (var i=0;i<pools.length;i+=1) {
-      var p = pools[i].poll();
-      r.clients += p.times.length;
-      r.totalRequests += p.totalRequests;
+      var p = pools[i].poll()
+        , db = 'db'+i
+        ;
+      r[db] = { timeline: t, clients: p.times.length, 
+                totalRequests: p.totalRequests, timesCount: 0, average: 0
+              }
+      r.all.clients += p.times.length;
+      r.all.totalRequests += p.totalRequests;
+      
       for (var y=0;y<p.times.length;y+=1) {
-        r.average += p.times[y];
+        r.all.average += p.times[y];
+        r[db].average += p.times[y];
         timesCount += 1;
+        r[db].timesCount += 1;
       }
+      
+      r[db].average = (r[db].average / r[db].timesCount);
+      p.starttimes.sort();
+      starts.push(p.starttimes);
+      r[db].oldest = p.starttimes[0];
+      r[db].last = p.starttimes[p.starttimes.length - 1];
     }
-    r.average = (r.average / timesCount);
+    r.all.average = (r.all.average / timesCount);
+    starts = Array.prototype.concat.apply([], starts);
     starts.sort();
-    r.oldest = starts[0];
-    r.last = starts[starts.length - 1]
+    r.all.oldest = starts[0];
+    r.all.last = starts[starts.length - 1]
+    
     cb(r)
     
   }, 1000)
@@ -103,8 +120,9 @@ if (require.main === module) {
   
   exports.testWritesToMany(options, function (obj) {
     if (obj) {
-      sys.puts(JSON.stringify(obj));
       options.results.push(obj)
+      sys.puts(sys.inspect(obj));
+      
     }
     else {
       var body = JSON.stringify(options)
