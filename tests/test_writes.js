@@ -1,100 +1,117 @@
-var sys = require("sys");
-var fs = require("fs");
-var http2 = require("../common/httplib2");
-var path = require("path");
-var client = require("../common/client");
-var pool = require("../common/pool");
-var optionparser = require("../common/optionparser");
-var events = require('events');
-var opts = new optionparser.OptionParser();
-opts.addOption('-c', '--clients', "number", "clients", 100, "Number of concurrent clients per process.");
-opts.addOption('-u', '--url', "string", "url", "http://localhost:5984", "CouchDB url to run tests against.");
-opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
-opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.")
-opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.")
-opts.addOption('-p', '--graph', "string", "graph", "http://mikeal.couchone.com/graphs", "CouchDB to persist results in.")
-
-var port = 8000;
-var ports = [];
-var connections = [];
-var c = 0;
-
-var sum = function (values) {
-  var rv = 0;
-  for (var i in values) {
-    rv += values[i];
-  }
-  return rv;
-};
-
-var testWrites = function (url, clients, doc, duration, poll, callback) {
-  if (url[url.length - 1] != '/') {
-    url += '/';
-  }
-  url += 'testwritesdb';
+var pool = require('../common/testpool')
+  , request = require('request')
+  , sys = require('sys')
+  , fs = require('fs')
+  , path = require('path')
+  ;
   
-  var results = [];
-  http2.request(url, 'PUT', {'accept':'application/json'}, undefined, function (error, response, buffer) {
-    if (error) {
-      // sys.puts("Error "+error);
-      // throw(error)
-    } else if (response.statusCode != 201) {
-      sys.puts("Could not create database "+response.statusCode+" "+buffer);
+var h = {'content-type':'application/json', 'accept':'applications/json'}
+  
+exports.testWrites = function (options, cb) {
+  var count = 0
+    , body = fs.readFileSync(path.join(__dirname, '..', 'common', options.doc+'_doc.json'))
+    , runstart = new Date()
+    , writePool
+    ;
+  options.body = body;
+  if (options.url[options.url.length - 1] !== '/') options.url += '/';
+  var uri = (options.url + 'testwritesdb')
+  
+  request({uri: uri, method: "PUT", headers: h}, function (error, resp, body) {
+    if (error) throw error;
+    if (resp.statusCode !== 201) {
+      sys.print('Could not create database. '+body);
     }
-    fs.readFile(path.join(__dirname, '..', 'common', doc+"_doc.json"), function (error, doc) {
-      if (error) {
-        sys.puts('Cannot cat'+path.join('..', 'common', doc+"_doc.json"));
-        process.exit(1);
-      }
-      var starttime = new Date();
-      var p = pool.createWritePool(clients, url, doc);
-      var poller = setInterval(function(){
-        var time = (new Date() - starttime) / 1000
-        var w = p.average();
-        
-        w.meantimes.sort()
-        w.starttimes.sort()
-        w.endtimes.sort()
-        
-        var r = {time: time, writes:{clients:w.meantimes.length, 
-                                      average:parseInt((sum(w.meantimes) / w.meantimes.length).toString().split('.')[0]),
-                                      last:w.pollts - (w.endtimes[w.endtimes.length - 1]),
-                                      },
-                 }
-        results.push(r);
-        sys.puts(JSON.stringify(r));
-      }, poll * 1000);
-      setTimeout(function(){
-        clearInterval(poller);
-        // uri, method, body, headers, client, encoding, callback
-        p.stop(function () {
-          // client.request(url, 'DELETE', undefined, undefined, undefined, undefined, function (error) {
-            callback(error, results)
-          // })
-        })
-      }, duration * 1000);
-    })
+    writePool = pool.createPool({uri: uri+'/', method: 'POST', body:options.body, 
+                                headers: h, count:options.clients}, function (e, o, resp, body) {
+      if (e) throw e;
+      if (resp.statusCode !== 201) throw new Error("Did not create document. "+body);
+    });
+    writePool.uri = uri;
   })
+  
+  var clockStart = new Date()
+    , results = []
+    ;
+    
+  var interval = setInterval(function () {
+    var t = (new Date() - runstart)      
+      , p = writePool.poll()
+      ;
+      
+    r = { timeline: t, clients: p.times.length, 
+          totalRequests: p.totalRequests, timesCount: 0, average: 0
+          }
+    r.clients += p.times.length;
+    r.totalRequests += p.totalRequests;
+    
+    for (var y=0;y<p.times.length;y+=1) {
+      r.average += p.times[y];
+      r.timesCount += 1;
+    }
+    
+    r.average = (r.average / r.timesCount);
+    p.starttimes.sort();
+    r.oldest = p.starttimes[0];
+    r.last = p.starttimes[p.starttimes.length - 1];
+    cb(r)
+    
+  }, 1000)
+  
+  setTimeout(function () {
+    clearInterval(interval);
+    writePool.end(function (p) {
+      request({uri:p.uri, method:'DELETE'}, function (err, resp, body) {
+        if (err) throw err;
+        if (resp.statusCode !== 200) sys.print("Could not delete database. "+body)
+      })
+    });
+    cb(null);
+  }, 1000 * options.duration);
 }
 
-exports.testWrites = testWrites;
-
-opts.ifScript(__filename, function(options) {
-  testWrites(options.url, options.clients, options.doc, options.duration, options.poll, function (error, results) {
-    if (options.graph) {
-      body = {'results':results, time:new Date(), clients:options.clients, doctype:options.doc, duration:options.duration}
-      client.request(options.graph, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
-        function (error, response, body) {
-          if (error) {throw new Error(error)}
-          if (response.statusCode != 201) {throw new Error(error + ' Status ' + response.statusCode + '\n' + body)}
-          else {sys.puts(options.graph+'/'+'_design/app/_show/writeTest/'+JSON.parse(body)['id'])}
-          process.exit();
-        }
-      )
-    } else {
-      process.exit();
+if (require.main === module) {
+  var cmdopts = require('../common/cmdopts')
+    , opts = cmdopts.createOptions({
+    clients :    { short: "c", "default": 50,                
+                   help: "Number of concurrent clients per database."
+                 }
+    , url :      { short: "u", "default": "http://localhost:5984",
+                   help: "CouchDB url to run tests against."
+                 }
+    , doc :      { short: "d", "default": "small",
+                   help: "small or large doc."
+                 }
+    , duration : { short: "t", "default": 60,          
+                   help: "Duration of the run in seconds."
+                 }
+    , graph :    { short: "g", "default": "http://graphs.mikeal.couchone.com", 
+                   help: "CouchDB to persist results in."
+                 }
+  });
+  
+  var options = opts.run();
+  options.results = [];
+  options.type = 'test'
+  delete options.body
+  
+  exports.testWrites(options, function (obj) {
+    if (obj) {
+      options.results.push({writes:obj})
+      sys.puts(sys.inspect(obj)); 
+    }
+    else {
+      var body = JSON.stringify(options)
+        , headers = {accept:'application/json', 'content-type':'application/json'}
+        ;
+      if (options.graph[options.graph.length -1] !== '/') options.graph += '/';
+      
+      request({uri:options.graph+'api', method:'POST', body:body, headers:headers}, function (err, resp, body) {
+        var info = JSON.parse(body);
+        sys.puts(options.graph+'#/graph/'+info.id);
+        
+      })
     }
   })
-})
 
-
+}

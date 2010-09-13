@@ -107,14 +107,14 @@ var tooltipMessage = function (results, item) {
   var label = item.series.label
     , prev = (item.dataIndex !== 0) ? results[item.dataIndex - 1][item.series.label] : null
     , curr = results[item.dataIndex][item.series.label]
-    , requests = (curr.totalRequests - prev ? prev.totalRequests : 0)
-    , time = (curr.timeline - prev ? prev.timeline : 0)
+    , requests = (curr.totalRequests - (prev ? prev.totalRequests : 0))
+    , time = (curr.timeline - (prev ? prev.timeline : 0))
     , rps = requests / (1 - ( 1000 - time ) / 1000 )
     , ms = curr.average
     , elapsed = curr.timeline
     , message = ''
     ;
-  
+
   message += '<div style="text-align:center"><strong>' + item.series.label + '</strong></div><table><tr><td><strong>' 
   if (ms < 1000) {
     message += ms + "</strong></td><td>milleseconds average</td></tr><tr><td><strong>"
@@ -132,6 +132,8 @@ var tooltipMessage = function (results, item) {
   message += '</table>'
   return message;  
 }
+
+var previousPoint;
               
 var plothover = function (results) {
   return function (event, pos, item) {
@@ -176,8 +178,7 @@ app.showGraph = function (id) {
       }
     }
     
-    if (s === 'test_writes_manydb.js') {
-      
+    if (doc.type === "test") {
       var results = createResponseTimeLines(doc.results);
       plot("div#responsetime", results, options);
       $("div#responsetime").bind("plothover", plothover(doc.results));
@@ -186,6 +187,7 @@ app.showGraph = function (id) {
       plot("div#rps", results, options);
       $("div#rps").bind("plothover", plothover(doc.results));
     }
+    
   })
 }
 
