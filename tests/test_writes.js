@@ -95,6 +95,10 @@ if (require.main === module) {
   options.type = 'test'
   delete options.body
   
+  request({uri:options.url, headers:headers}, function (err, resp, body) {
+    options.dbinfo = JSON.parse(body);
+  })
+  
   exports.testWrites(options, function (obj) {
     if (obj) {
       options.results.push({writes:obj})
