@@ -1,6 +1,6 @@
 var http = require('http')
   , sys = require('sys')
-  , request = require('request')
+  , request = require('./request')
   ;
 
 exports.createPool = function (options, callback) {
