@@ -1,5 +1,5 @@
 var pool = require('../common/testpool')
-  , request = require('request')
+  , request = require('../common/request')
   , sys = require('sys')
   , fs = require('fs')
   , path = require('path')
