@@ -92,13 +92,8 @@ if (require.main === module) {
   
   if (options.url[options.url.length - 1] === '/') curi = options.url.slice(0,options.url.lastIndexOf('/', options.url.length - 2))
   else curi = options.url.slice(0, options.url.lastIndexOf('/'))
-
-  request({uri:curi, headers:h}, function (err, resp, body) {
-    options.dbinfo = JSON.parse(body);
-  })
-  request({uri:curi+'/_config', headers:h}, function (err, resp, body) {
-    options.dbconfig = JSON.parse(body);
-  })
+  
+  require('../common/couchinfo').getinfo(curi, options);
   
   exports.testReads(options, function (obj) {
     if (obj) {

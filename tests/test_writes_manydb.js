@@ -118,9 +118,7 @@ if (require.main === module) {
   options.type = 'test'
   delete options.body
   
-  request({uri:options.url, headers:h}, function (err, resp, body) {
-    options.dbinfo = JSON.parse(body);
-  })
+  require('../common/couchinfo').getinfo(options.url, options);
   
   exports.testWritesToMany(options, function (obj) {
     if (obj) {
