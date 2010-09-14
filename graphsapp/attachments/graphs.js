@@ -177,16 +177,28 @@ app.showGraph = function (id) {
         }
       }
     }
+    if (doc.dbinfo) $('div#dbinfo').append('<span class="info-key">CouchDB version</span><span class="info-value">'+doc.dbinfo.version+'</span><br>')
     
-    if (doc.type === "test") {
-      var results = createResponseTimeLines(doc.results);
-      plot("div#responsetime", results, options);
-      $("div#responsetime").bind("plothover", plothover(doc.results));
-      
-      var results = createRPSLines(doc.results);
-      plot("div#rps", results, options);
-      $("div#rps").bind("plothover", plothover(doc.results));
+    if (doc.dbconfig) {
+      var c = $('div#dbconfig');
+      for (i in doc.dbconfig) {
+        var section = c.append('<div class="config-section">['+i+']</div>')
+        if (typeof doc.dbconfig[i] !== "object") console.log(i);
+        for (x in doc.dbconfig[i]) {
+          section.append('<span class="config-key">'+x+'</span><span class="config-value">'+doc.dbconfig[i][x]+'</span><br>')
+        }
+      }
     }
+    
+    var results = createResponseTimeLines(doc.results);
+    plot("div#responsetime", results, options);
+    $("div#responsetime").bind("plothover", plothover(doc.results));
+    
+    var results = createRPSLines(doc.results);
+    plot("div#rps", results, options);
+    $("div#rps").bind("plothover", plothover(doc.results));
+    
+    
     
   })
 }

@@ -94,9 +94,13 @@ if (require.main === module) {
   options.results = [];
   options.type = 'test'
   delete options.body
+  if (options.url[options.url.length - 1] !== '/') options.url += '/'
   
-  request({uri:options.url, headers:headers}, function (err, resp, body) {
+  request({uri:options.url, headers:h}, function (err, resp, body) {
     options.dbinfo = JSON.parse(body);
+  })
+  request({uri:options.url+'_config', headers:h}, function (err, resp, body) {
+    options.dbconfig = JSON.parse(body);
   })
   
   exports.testWrites(options, function (obj) {

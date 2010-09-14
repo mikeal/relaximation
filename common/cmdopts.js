@@ -48,6 +48,7 @@ exports.Options.prototype._handle = function (name, value) {
     else return parseInt(value);
   }
   if (this.registry[name].type === 'string') return value;
+  return value;
 }
 exports.Options.prototype.run = function () {
   var args = process.argv

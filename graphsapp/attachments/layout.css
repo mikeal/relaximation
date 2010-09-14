@@ -2,6 +2,10 @@ html {font: normal 90% Verdana, sans-serif;}
 
 div#page-type {font-size:30px;text-align:center;font-weight:bold;width:100%;padding-bottom:20px;}
 div#page-info {width:100%;padding-bottom:20px;}
+div.config-section {font-weight:bold;}
 
 span.info-key { float:left; color: #FF0000; margin-right:8px; }
 span.info-value { float:left; margin-right:30px; }
+
+span.config-key { float:left; color: #FF0000; margin-right:8px; margin-left:12px;}
+span.config-value { float:left; margin-right:30px; }

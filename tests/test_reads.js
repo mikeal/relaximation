@@ -1,90 +1,123 @@
-var sys = require("sys"),
-    fs = require("fs"), 
-    http2 = require("../common/httplib2"),
-    path = require("path"),
-    client = require("../common/client"),
-    pool = require("../common/pool"),
-    optionparser = require("../common/optionparser"),
-    request = require('../common/request/main')
-    events = require('events');
+var pool = require('../common/testpool')
+  , request = require('../common/request')
+  , sys = require('sys')
+  , fs = require('fs')
+  , path = require('path')
+  ;
+  
+var h = {'content-type':'application/json', 'accept':'applications/json'}
+  
+exports.testReads = function (options, cb) {
+  if (options.url[options.url.length - 1] !== '/') options.url += '/';
+  
+  var doTest = function () {
+    var count = 0
+      , runstart = new Date()
+      , readPool
+      ;
+    var opts = {uri: options.url + options.docids[0], headers: h, count: options.clients, method:"GET"};
+    readPool = pool.createPool(opts, function (e, o, resp, body) {
+      if (e) throw e;
+      if (resp.statusCode !== 200) throw new Error("Did not create document. "+body);
+      opts.uri = (options.url + options.docids[Math.floor(Math.random()*options.docids.length)]);
+    });
+    readPool.uri = options.url;
 
-var opts = new optionparser.OptionParser();
-opts.addOption('-c', '--clients', "number", "clients", 100, "Number of concurrent read clients per process.");
-opts.addOption('-u', '--url', "string", "url", null, "CouchDB url to run tests against.");
-opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.");
-opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.");
-opts.addOption('-p', '--graph', "string", "graph", "http://mikeal.couchone.com/graphs", "CouchDB to persist results in.");
+    var clockStart = new Date()
+    var interval = setInterval(function () {
+      var t = (new Date() - runstart)      
+        , p = readPool.poll()
+        ;
 
-var sum = function (values) {
-  var rv = 0;
-  for (var i in values) {
-    rv += values[i];
+      r = { timeline: t, clients: p.times.length, 
+            totalRequests: p.totalRequests, timesCount: 0, average: 0
+            }
+      r.clients += p.times.length;
+      r.totalRequests += p.totalRequests;
+
+      for (var y=0;y<p.times.length;y+=1) {
+        r.average += p.times[y];
+        r.timesCount += 1;
+      }
+
+      r.average = (r.average / r.timesCount);
+      p.starttimes.sort();
+      r.oldest = p.starttimes[0];
+      r.last = p.starttimes[p.starttimes.length - 1];
+      cb(r)
+
+    }, 1000)
+
+    setTimeout(function () {
+      clearInterval(interval);
+      readPool.end(function (p) {});
+      cb(null);
+    }, 1000 * options.duration);
   }
-  return rv;
-};
-
-opts.ifScript(__filename, function(options) {
-  var url = options.url
-  if (options.url === null) throw 'You need to set url to your couchdb url'
-  if (options.url[options.url.length -1] !== '/') options.url += '/'
-  request({uri:options.url+'_all_docs', headers:{'content-type':'application/json'}}, function (err, resp, body) {
-    if (err) throw err;
-    if (resp.statusCode !== 200) throw 'All docs does not exist. \n'+body;
-    var ids = [];
-    JSON.parse(body).rows.forEach(function (row) {ids.push(row.id)});
-    var starttime = new Date();    
-    var randomUrl = function () {
-      var i = Math.floor(Math.random() * (ids.length - 1))
-      var id = ids[i]
-      return options.url+id
-    }
-    var readPool;
-    
-    var results = [];
-    
-    setTimeout(function () {readPool = pool.createReadPool(options.clients, randomUrl);}, 500)
-    
-    var poller = setInterval(function(){
-      var time = (new Date() - starttime) / 1000
-      // var wmn = writePool.getMeantime();
-      // var rmn = readPool.getMeantime();
-      var r = readPool.average();
-      
-      r.meantimes.sort()
-      r.starttimes.sort()
-      r.endtimes.sort()
-      
-      var r = {time: time, reads:{clients:r.meantimes.length, 
-                                    average:parseInt((sum(r.meantimes) / r.meantimes.length).toString().split('.')[0]),
-                                    last:r.pollts - r.endtimes[r.endtimes.length - 1],
-                                    }
-               }
-      results.push(r);
-      sys.puts(JSON.stringify(r));
-    }, options.poll * 1000);
-    setTimeout(function(){
-      // uri, method, body, headers, client, encoding, callback
-      clearInterval(poller);
-      readPool.stop(function () {
-        // client.request(url, 'DELETE', undefined, undefined, undefined, undefined, function (error) {
-        //   callback(error, results)
-        // })
-        body = {results:results, time:new Date(),  
-                clients:options.clients, duration:options.duration}
-        client.request(options.graph, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
-          function (error, response, body) {
-            if (error) {throw new Error(error)}
-            if (response.statusCode != 201) {throw new Error(error + ' Status ' + response.statusCode + '\n' + body)}
-            else {sys.puts(options.graph+'/'+'_design/app/_show/readTest/'+JSON.parse(body)['id'])}
-            process.exit();
-          }
-        )
+  
+  if (!options.docids) {
+    options.docids = [];
+    request({uri:options.url+'_all_docs', headers:h}, function (err, resp, body) {
+      JSON.parse(body).rows.forEach(function (row) {
+        options.docids.push(row.id);
       })
-    }, options.duration * 1000);
-    
+      doTest();
+    })
+  } else {doTest();}
+  
+  
+  
+}
+
+if (require.main === module) {
+  var cmdopts = require('../common/cmdopts')
+    , opts = cmdopts.createOptions({
+    clients :    { short: "c", "default": 50,                
+                   help: "Number of concurrent clients per database."
+                 }
+    , url :      { short: "u", 
+                   help: "CouchDB url to run tests against."
+                 }
+    , duration : { short: "t", "default": 60,          
+                   help: "Duration of the run in seconds."
+                 }
+    , graph :    { short: "g", "default": "http://graphs.mikeal.couchone.com", 
+                   help: "CouchDB to persist results in."
+                 }
+  });
+  
+  var options = opts.run();
+  options.results = [];
+  options.type = 'test'
+  
+  if (options.url[options.url.length - 1] === '/') curi = options.url.slice(0,options.url.lastIndexOf('/', options.url.length - 2))
+  else curi = options.url.slice(0, options.url.lastIndexOf('/'))
+
+  request({uri:curi, headers:h}, function (err, resp, body) {
+    options.dbinfo = JSON.parse(body);
   })
-})
+  request({uri:curi+'/_config', headers:h}, function (err, resp, body) {
+    options.dbconfig = JSON.parse(body);
+  })
+  
+  exports.testReads(options, function (obj) {
+    if (obj) {
+      options.results.push({reads:obj})
+      sys.puts(sys.inspect(obj)); 
+    }
+    else {
+      var body = JSON.stringify(options)
+        , headers = {accept:'application/json', 'content-type':'application/json'}
+        ;
+      if (options.graph[options.graph.length -1] !== '/') options.graph += '/';
+      
+      request({uri:options.graph+'api', method:'POST', body:body, headers:headers}, function (err, resp, body) {
+        var info = JSON.parse(body);
+        sys.puts(options.graph+'#/graph/'+info.id);
+        
+      })
+    }
+  })
 
-
-
+}
 
