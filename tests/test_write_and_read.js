@@ -20,7 +20,7 @@ exports.testReadsAndWrites = function (options, cb) {
     , readerDelay
     ;
   
-  if (wopts.url[wopts.url.length - 1] === '/') wopts.url += '/'
+  if (wopts.url[wopts.url.length - 1] !== '/') wopts.url += '/'
   wopts.clients = options.wclients;
   ropts.clients = options.rclients;
   wopts.dbname = 'testreadandwrite';
