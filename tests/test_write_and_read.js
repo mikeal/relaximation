@@ -30,7 +30,7 @@ exports.testReadsAndWrites = function (options, cb) {
     ropts.docids.push(JSON.parse(body).id)
     if (!readersStarted) {
       readersStarted = true;
-      // Only run the writers up until 1 second before the writers are scheduled to finish
+      // Only run the readers until the writers are scheduled to finish
       ropts.duration = ropts.duration - ((new Date() - writeStart) / 1000)
       require('./test_reads').testReads(ropts, function (r) {
         cb(r ? {reads:r} : null)
