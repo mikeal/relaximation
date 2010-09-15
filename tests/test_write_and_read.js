@@ -17,6 +17,7 @@ exports.testReadsAndWrites = function (options, cb) {
   var wopts = copy(options)
     , ropts = copy(options)
     , readersStarted = false
+    , readerDelay
     ;
   
   if (wopts.url[wopts.url.length - 1] === '/') wopts.url += '/'
@@ -31,10 +32,12 @@ exports.testReadsAndWrites = function (options, cb) {
     if (!readersStarted) {
       readersStarted = true;
       // Only run the readers until the writers are scheduled to finish
+      readerDelay = (new Date() - writeStart) 
       ropts.duration = ropts.duration - ((new Date() - writeStart) / 1000)
       require('./test_reads').testReads(ropts, function (r) {
-        cb(r ? {reads:r} : null)
-      })
+        r.timeline += readerDelay;
+        cb(r ? {reads:r} : null);
+      })      
     }
   }
   
