@@ -35,7 +35,7 @@ exports.testReadsAndWrites = function (options, cb) {
       readerDelay = (new Date() - writeStart) 
       ropts.duration = ropts.duration - ((new Date() - writeStart) / 1000)
       require('./test_reads').testReads(ropts, function (r) {
-        r.timeline += readerDelay;
+        if (r) {r.timeline += readerDelay;}
         cb(r ? {reads:r} : null);
       })      
     }
