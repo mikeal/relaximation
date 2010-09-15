@@ -12,10 +12,11 @@ exports.testWrites = function (options, cb) {
     , body = fs.readFileSync(path.join(__dirname, '..', 'common', options.doc+'_doc.json'))
     , runstart = new Date()
     , writePool
+    , dbname = options.dbname ? options.dbname : 'testwritesdb'
     ;
   options.body = body;
   if (options.url[options.url.length - 1] !== '/') options.url += '/';
-  var uri = (options.url + 'testwritesdb')
+  var uri = (options.url + dbname)
   
   request({uri: uri, method: "PUT", headers: h}, function (error, resp, body) {
     if (error) throw error;
@@ -24,6 +25,7 @@ exports.testWrites = function (options, cb) {
     }
     writePool = pool.createPool({uri: uri+'/', method: 'POST', body:options.body, 
                                 headers: h, count:options.clients}, function (e, o, resp, body) {
+      if (options.requestCallback) options.requestCallback(e, o, resp, body);
       if (e) throw e;
       if (resp.statusCode !== 201) throw new Error("Did not create document. "+body);
     });
@@ -42,7 +44,7 @@ exports.testWrites = function (options, cb) {
     r = { timeline: t, clients: p.times.length, 
           totalRequests: p.totalRequests, timesCount: 0, average: 0
           }
-    r.clients += p.times.length;
+    r.clients = p.times.length;
     r.totalRequests += p.totalRequests;
     
     for (var y=0;y<p.times.length;y+=1) {

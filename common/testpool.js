@@ -21,6 +21,7 @@ exports.createPool = function (options, callback) {
       , endtimes = []
       , current = new Date()
       ;
+
     for (var i=0;i<pool.pools.length;i+=1) {
       var o = pool.pools[i];
       if (o.endtime) {
@@ -42,7 +43,7 @@ exports.createPool = function (options, callback) {
   
   if (!options.headers) options.headers = {};
   options.headers.connection = 'keep-alive';
-  if (!options.delay) options.delay = 1;
+  if (!options.delay) options.delay = 50;
   
   var d = 0;
   var closed = 0;

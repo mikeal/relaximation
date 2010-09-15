@@ -32,7 +32,7 @@ exports.testReads = function (options, cb) {
       r = { timeline: t, clients: p.times.length, 
             totalRequests: p.totalRequests, timesCount: 0, average: 0
             }
-      r.clients += p.times.length;
+      r.clients = p.times.length;
       r.totalRequests += p.totalRequests;
 
       for (var y=0;y<p.times.length;y+=1) {
@@ -101,12 +101,10 @@ if (require.main === module) {
       sys.puts(sys.inspect(obj)); 
     }
     else {
-      var body = JSON.stringify(options)
-        , headers = {accept:'application/json', 'content-type':'application/json'}
-        ;
+      var body = JSON.stringify(options);
       if (options.graph[options.graph.length -1] !== '/') options.graph += '/';
       
-      request({uri:options.graph+'api', method:'POST', body:body, headers:headers}, function (err, resp, body) {
+      request({uri:options.graph+'api', method:'POST', body:body, headers:h}, function (err, resp, body) {
         var info = JSON.parse(body);
         sys.puts(options.graph+'#/graph/'+info.id);
         

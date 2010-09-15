@@ -13,7 +13,6 @@ var request = function (options, callback) {
 var createResponseTimeLines = function (results) {
   var lines = {}
   results.forEach(function (result) {
-    var line = [];
     for (i in result) {
       if (!lines[i]) lines[i] = {label:i, data:[]}
       var r = result[i];
@@ -21,7 +20,9 @@ var createResponseTimeLines = function (results) {
         if (r.last > r.average) {
           r.average = r.lase;
         } 
-        lines[i].data.push([r.timeline, r.average]);
+        var l = [r.timeline, r.average];
+        l.r = r;
+        lines[i].data.push(l);
       }
     }
   })  
@@ -29,20 +30,20 @@ var createResponseTimeLines = function (results) {
 }
 
 var createRPSLines = function (results) {
-  var lines = {}
-    , prevIndex = -1
-    ;
+  var lines = {};
   results.forEach(function (result) {
-    var line = [];
     for (i in result) {
       if (!lines[i]) lines[i] = {label:i, data:[]}
-      var prev = results[prevIndex] ? results[prevIndex][i] : null
-        , curr = results[prevIndex + 1][i]
+      var prevIndex = lines[i].data.length - 1
+        , prev = lines[i].data[prevIndex] ? lines[i].data[prevIndex].r : null
+        , curr = result[i]
         , requests = (curr.totalRequests - (prev ? prev.totalRequests : 0))
         , time = (curr.timeline - (prev ? prev.timeline : 0))
         , rps = requests / (1 - ( 1000 - time ) / 1000 )
         ;
-      lines[i].data.push([curr.timeline, requests]);
+      var l = [curr.timeline, requests];
+      l.r = curr;
+      lines[i].data.push(l);
     }
     prevIndex += 1;
   })  
@@ -103,10 +104,10 @@ function showTooltip(x, y, contents) {
   }).appendTo("body").fadeIn(200);
 }
 
-var tooltipMessage = function (results, item) {
+var tooltipMessage = function (item) {
   var label = item.series.label
-    , prev = (item.dataIndex !== 0) ? results[item.dataIndex - 1][item.series.label] : null
-    , curr = results[item.dataIndex][item.series.label]
+    , prev = (item.dataIndex !== 0) ? item.series.data[item.dataIndex - 1].r : null
+    , curr = item.series.data[item.dataIndex].r
     , requests = (curr.totalRequests - (prev ? prev.totalRequests : 0))
     , time = (curr.timeline - (prev ? prev.timeline : 0))
     , rps = requests / (1 - ( 1000 - time ) / 1000 )
@@ -143,7 +144,7 @@ var plothover = function (results) {
       if (previousPoint != item.datapoint) {
         previousPoint = item.datapoint;
         $("#tooltip").remove();
-        showTooltip(item.pageX, item.pageY, tooltipMessage(results, item));
+        showTooltip(item.pageX, item.pageY, tooltipMessage(item));
       }
     }
     else {
