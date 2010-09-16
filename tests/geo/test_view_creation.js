@@ -1,7 +1,7 @@
 var fs = require('fs')
   , path = require('path')
   , sys = require('sys')
-  , request = require('request');
+  , request = require('../../common/request');
 
 var bulk = '{"docs":[' + fs.readFileSync(path.join(__dirname, 'gnis_names09_bulk.json')).toString() + ']}';
 
