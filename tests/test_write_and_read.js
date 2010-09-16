@@ -18,6 +18,7 @@ exports.testReadsAndWrites = function (options, cb) {
     , ropts = copy(options)
     , readersStarted = false
     , readerDelay
+    , nullSent = false
     ;
   
   if (wopts.url[wopts.url.length - 1] !== '/') wopts.url += '/'
@@ -26,7 +27,7 @@ exports.testReadsAndWrites = function (options, cb) {
   wopts.dbname = 'testreadandwrite';
   ropts.url = wopts.url + wopts.dbname;
   ropts.docids = [];
-  
+    
   wopts.requestCallback = function (e, o, resp, body) {
     ropts.docids.push(JSON.parse(body).id)
     if (!readersStarted) {
@@ -36,14 +37,24 @@ exports.testReadsAndWrites = function (options, cb) {
       ropts.duration = ropts.duration - ((new Date() - writeStart) / 1000)
       require('./test_reads').testReads(ropts, function (r) {
         if (r) {r.timeline += readerDelay;}
-        cb(r ? {reads:r} : null);
+        else {
+          if (nullSent) {
+            cb(null); return;
+          } else {nullSent = true; return;}
+        }
+        cb({reads:r});
       })      
     }
   }
   
   var writeStart = new Date();
   require('./test_writes').testWrites(wopts, function (r) {
-    cb(r ? {writes:r} : null)
+    if (!r) {
+      if (nullSent) {
+        cb(null); return;
+      } else {nullSent = true; return;}
+    }
+    cb({writes:r})
   })
   
 }
@@ -79,25 +90,21 @@ if (require.main === module) {
   
   require('../common/couchinfo').getinfo(options.url, options);
   
-  var nulls = 0;
+  
   exports.testReadsAndWrites(options, function (obj) {
     if (obj) {
       options.results.push(obj)
       sys.puts(sys.inspect(obj)); 
     }
     else {
-      nulls += 1
-      if (nulls == 2) {
-        sys.puts()
-        var body = JSON.stringify(options);
-        if (options.graph[options.graph.length -1] !== '/') options.graph += '/';
+      var body = JSON.stringify(options);
+      if (options.graph[options.graph.length -1] !== '/') options.graph += '/';
 
-        request({uri:options.graph+'api', method:'POST', body:body, headers:h}, function (err, resp, body) {
-          var info = JSON.parse(body);
-          sys.puts(options.graph+'#/graph/'+info.id);
+      request({uri:options.graph+'api', method:'POST', body:body, headers:h}, function (err, resp, body) {
+        var info = JSON.parse(body);
+        sys.puts(options.graph+'#/graph/'+info.id);
 
-        })
-      }
+      })
     }
   })
 

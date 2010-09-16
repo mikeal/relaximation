@@ -58,8 +58,8 @@ exports.createPool = function (options, callback) {
         opts.endtime = new Date();
         opts.totalRequests += 1;
         if (opts.callback) opts.callback(error, opts, resp, body);
-        opts._starttime = new Date();
         if (pool.running) {
+          opts._starttime = new Date();
           request(opts, cb);
         } else {
           opts.client.end();
@@ -69,6 +69,7 @@ exports.createPool = function (options, callback) {
           }
         }
       }
+      opts._starttime = new Date();
       request(opts, cb);
     }, d)
   }
