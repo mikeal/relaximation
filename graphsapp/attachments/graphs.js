@@ -10,6 +10,10 @@ var request = function (options, callback) {
   $.ajax(options)
 }
 
+var capitalize = function(s) {
+  return s.replace( /(^|\s)([a-z])/g , function(m,p1,p2){ return p1+p2.toUpperCase(); } );
+ };
+
 var createResponseTimeLines = function (results) {
   var lines = {}
   results.forEach(function (result) {
@@ -178,18 +182,7 @@ app.showGraph = function (id) {
         }
       }
     }
-    if (doc.dbinfo) $('div#dbinfo').append('<span class="info-key">CouchDB version</span><span class="info-value">'+doc.dbinfo.version+'</span><br>')
     
-    if (doc.dbconfig) {
-      var c = $('div#dbconfig');
-      for (i in doc.dbconfig) {
-        var section = c.append('<div class="config-section">['+i+']</div>')
-        if (typeof doc.dbconfig[i] !== "object") console.log(i);
-        for (x in doc.dbconfig[i]) {
-          section.append('<span class="config-key">'+x+'</span><span class="config-value">'+doc.dbconfig[i][x]+'</span><br>')
-        }
-      }
-    }
     
     var results = createResponseTimeLines(doc.results);
     plot("div#responsetime", results, options);
@@ -198,6 +191,37 @@ app.showGraph = function (id) {
     var results = createRPSLines(doc.results);
     plot("div#rps", results, options);
     $("div#rps").bind("plothover", plothover(doc.results));
+    
+    var addConfig = function (c, config) {
+      for (i in config) {
+        var section = c.append('<div class="config-section">['+i+']</div>')
+        if (typeof config[i] !== "object") console.log(i);
+        for (x in config[i]) {
+          section.append('<span class="config-key">'+x+'</span><span class="config-value">'+config[i][x]+'</span><br>')
+        }
+      }
+    }
+    
+    if (doc.dbconfig) {
+      
+      $('div#info').append('<h2>Info</h2><div id="dbinfo"><span class="info-key">CouchDB version</span><span class="info-value">'+doc.dbinfo.version+'</span><br></div><h3>Configuration</h3><div id="dbconfig" />')
+      addConfig($('div#dbconfig'), doc.dbconfig);
+      
+    } else if (doc.info1) {
+      $('div#info').append('<h2>'+capitalize(doc.name1)+
+        ' Info</h2><div id="dbinfo"><span class="info-key">CouchDB version</span><span class="info-value">'+
+        doc.info1.dbinfo.version+'</span><br></div><h3>'+
+        capitalize(doc.name1)+' Configuration</h3><div id="dbconfig1" /><br><br>'
+       );
+      addConfig($('div#dbconfig1'), doc.info1.dbconfig);
+      
+      $('div#info').append('<h2>'+capitalize(doc.name2)+
+        ' Info</h2><div id="dbinfo"><span class="info-key">CouchDB version</span><span class="info-value">'+
+        doc.info2.dbinfo.version+'</span><br></div><h3>'+
+        capitalize(doc.name2)+' Configuration</h3><div id="dbconfig1" />'
+       );
+      addConfig($('div#dbconfig1'), doc.info2.dbconfig);
+    }
     
     
     

@@ -1,76 +1,106 @@
-var testModule = require('./test_writes')
+var pool = require('../common/testpool')
+  , request = require('../common/request')
+  , sys = require('sys')
+  , fs = require('fs')
+  , path = require('path')
+  , testWrites = require('./test_writes').testWrites
+  ;
 
-var sys = require("sys"),
-    fs = require("fs"),
-    http2 = require("../common/httplib2"),
-    path = require("path"),
-    client = require("../common/client"),
-    optionparser = require("../common/optionparser"),
-    events = require('events');
+var copy = function (obj) {
+  var r = {};
+  for (i in obj) r[i] = obj[i];
+  return r;
+}  
 
-var opts = new optionparser.OptionParser();
-opts.addOption('-c', '--clients', "number", "clients", 100, "Number of concurrent clients per process.");
-opts.addOption('-u', '--url1', "string", "url1", "http://localhost:5984", "CouchDB url to run tests against.");
-opts.addOption('-v', '--url2', "string", "url2", "http://localhost:5985", "CouchDB url to run tests against.");
-opts.addOption('-1', '--name1', "string", "name1", null, "Name of first comparative.");
-opts.addOption('-2', '--name2', "string", "name2", null, "Name of first comparative.");
-opts.addOption('-d', '--doc', "string", "doc", "small", "small or large doc.");
-opts.addOption('-t', '--duration', "number", "duration", 60, "Duration of the run in seconds.")
-opts.addOption('-i', '--poll', "number", "poll", 1, "Polling interval in seconds.")
-opts.addOption('-p', '--graph', "string", "graph", "http://mikeal.couchone.com/graphs", "CouchDB to persist results in.")
-opts.addOption('-r', '--recurrence', "number", "recurrence", 5, "How many times to run the tests.")
-
-var port = 8000;
-var ports = [];
-var connections = [];
-var c = 0;
-
-var sum = function (values) {
-  var rv = 0;
-  for (var i in values) {
-    rv += values[i];
-  }
-  return rv;
-};
-
-opts.ifScript(__filename, function(options) {
-  if (!options.name1 || !options.name2) {
-    throw "YOU MUST GIVE ME NAMES, --name1 and --name2"
-  }
+var h = {'content-type':'application/json', 'accept':'applications/json'}
   
-  var results1 = []
-  var results2 = []
-
-  var i = 1;
+exports.compareWrites = function (options, cb) {
+  if (!options.name1 || !options.name2) throw new Error("You must provide names for the test nodes.")
   
-  function runTest () {
-    testModule.testWrites(options.url1, options.clients, options.doc, options.duration, options.poll, function (error, results) {
-      var r = {results:results, time:new Date(), clients:options.clients, 
-               doctype:options.doc, duration:options.duration}
-      results1.push(r)
-      testModule.testWrites(options.url2, options.clients, options.doc, options.duration, options.poll, function(error, results) {
-        r = {results:results, time:new Date(), clients:options.clients, 
-             doctype:options.doc, duration:options.duration}
-        results2.push(r)
+  var name = options.name1
+    , firstFinish = false
+    , opts = copy(options)
+    ;
+  
+  var listener = function (r) {
+    if (!r) {
+      if (firstFinish) cb(null);
+      else {
+        firstFinish = true;
+        opts = copy(options)
+        opts.url = options.url2;
+        name = options.name2; 
+        setTimeout(function () {
+          testWrites(opts, listener);
+        }, 2000)
+        
+      }
+    } else {
+      var x = {};
+      x[name] = r;
+      cb(x);
+    }
+  }
+  opts.url = options.url1
+  testWrites(opts, listener)
+}
 
-        if (i !== options.recurrence) {
-          i += 1;
-          runTest();
-        } else {
-          body = {'results':[{name:options.name1, results:results1}, {name:options.name2, results:results2}], 
-                  time:new Date(), clients:options.clients, doctype:options.doc, duration:options.duration,
-                  recurrence:options.recurrence}
-          client.request(options.graph, 'POST', JSON.stringify(body), undefined, undefined, 'utf8',  
-            function (error, response, body) {
-              if (response.statusCode != 201) {sys.puts('bad!')}
-              else {sys.puts(options.graph+'/'+'_design/app/_show/compareWriteTest/'+JSON.parse(body)['id'])}
-              process.exit();
-          })
-        }
+if (require.main === module) {
+  var cmdopts = require('../common/cmdopts')
+    , opts = cmdopts.createOptions({
+    clients :    { short: "c", "default": 50,                
+                   help: "Number of concurrent clients per database."
+                 }
+    , name1 :    { short: "1", 
+                   help: "Name for first test node."
+                 }
+    , name2 :    { short: "2", 
+                   help: "Name for second test node."
+                 }
+    , url1 :      { short: "u", "default": "http://localhost:5984",
+                   help: "First CouchDB url to run tests against."
+                 }
+    , url2 :     { short: "i", "default": "http://localhost:5985",
+                   help: "Second CouchDB url to run tests against."
+                 }
+    , doc :      { short: "d", "default": "small",
+                   help: "small or large doc."
+                 }
+    , duration : { short: "t", "default": 60,          
+                   help: "Duration of the run in seconds."
+                 }
+    , graph :    { short: "g", "default": "http://graphs.mikeal.couchone.com", 
+                   help: "CouchDB to persist results in."
+                 }
+  });
+  
+  var options = opts.run();
+  options.results = [];
+  options.type = 'test'
+  delete options.body
+  if (options.url1[options.url1.length - 1] !== '/') options.url1 += '/'
+  if (options.url2[options.url2.length - 1] !== '/') options.url2 += '/'
+  options.info1 = {}
+  options.info2 = {}
+  
+  require('../common/couchinfo').getinfo(options.url1, options.info1);
+  require('../common/couchinfo').getinfo(options.url2, options.info2);
+  
+  exports.compareWrites(options, function (obj) {
+    if (obj) {
+      options.results.push(obj)
+      sys.puts(sys.inspect(obj)); 
+    } else {
+      delete options.url;
+      var body = JSON.stringify(options);
+      
+      if (options.graph[options.graph.length -1] !== '/') options.graph += '/';
+      
+      request({uri:options.graph+'api', method:'POST', body:body, headers:h}, function (err, resp, body) {
+        var info = JSON.parse(body);
+        sys.puts(options.graph+'#/graph/'+info.id);
       })
-    })
-  }
-  runTest()
-})
+    }
+  })
 
-
+}
