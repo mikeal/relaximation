@@ -91,5 +91,5 @@ Concurrent performance is really unreliable when running with Delayed Commits on
 <pre>
   [couchdb]
   ;max_document_size = 4294967296 ; bytes
-  delayed_commits = false;
+  delayed_commits = false ;
 </pre>
