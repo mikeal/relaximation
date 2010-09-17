@@ -38,14 +38,26 @@ By default this test runs for 60 seconds (duration setting) against both servers
 Although it's not always immediately useful tests do continuously print their results. 
 
 <pre>
-  {"time":1.001,"writes":{"clients":9,"average":7,"last":5},"reads":{"clients":4,"average":2,"last":2}}
-  {"time":2.001,"writes":{"clients":19,"average":17,"last":12},"reads":{"clients":14,"average":13,"last":3}}
-  {"time":3.001,"writes":{"clients":29,"average":37,"last":7},"reads":{"clients":24,"average":13,"last":15}}
-  {"time":4.001,"writes":{"clients":37,"average":117,"last":189},"reads":{"clients":32,"average":102,"last":197}}
-  {"time":5.001,"writes":{"clients":49,"average":60,"last":29},"reads":{"clients":44,"average":53,"last":37}}
-  {"time":6.002,"writes":{"clients":50,"average":93,"last":29},"reads":{"clients":54,"average":41,"last":7}}
-  {"time":7.001,"writes":{"clients":50,"average":69,"last":115},"reads":{"clients":64,"average":44,"last":26}}
-  {"time":8.001,"writes":{"clients":50,"average":67,"last":12},"reads":{"clients":74,"average":72,"last":22}}
+  { 'trunk-reads': 
+     { timeline: 59093
+     , clients: 200
+     , totalRequests: 54840
+     , timesCount: 200
+     , average: 425.315
+     , oldest: Thu, 16 Sep 2010 23:59:34 GMT
+     , last: Thu, 16 Sep 2010 23:59:35 GMT
+     }
+  }
+  { 'trunk-writes': 
+     { timeline: 60001
+     , clients: 50
+     , totalRequests: 980
+     , timesCount: 50
+     , average: 8928.1
+     , oldest: Thu, 16 Sep 2010 23:59:19 GMT
+     , last: Thu, 16 Sep 2010 23:59:23 GMT
+     }
+  }
 </pre>
 
 The first thing to notice is that clients may take some time to ramp up depending on the number of clients you told the test to use. This ramp up time insures that test clients are properly staggered more like real traffic.
@@ -54,18 +66,23 @@ The average is the amount of time, in milliseconds that the **last** request too
 
 # Graphs
 
-By default all tests will POST the results to http://mikeal.couchone.com/graphs which contains a couchapp for viewing test results as a graph. An url the graph will be the last thing printed by the test before exiting.
+By default all tests will POST the results to http://graphs.mikeal.couchone.com which contains a couchapp for viewing test results as a graph. An url the graph will be the last thing printed by the test before exiting.
 
 <pre>
-  {"time":58.001,"writes":{"clients":50,"average":174,"last":30},"reads":{"clients":200,"average":142,"last":124}}
-  {"time":59.001,"writes":{"clients":50,"average":148,"last":61},"reads":{"clients":200,"average":142,"last":13}}
-  {"time":60.001,"writes":{"clients":50,"average":155,"last":97},"reads":{"clients":200,"average":152,"last":59}}
-  http://mikeal.couchone.com/graphs/_design/app/_show/compareWriteReadTest/c34d5d47f99e11be1f591832d00037e5
+  { 'branch-writes': 
+     { timeline: 60001
+     , clients: 50
+     , totalRequests: 980
+     , timesCount: 50
+     , average: 8928.1
+     , oldest: Thu, 16 Sep 2010 23:59:19 GMT
+     , last: Thu, 16 Sep 2010 23:59:23 GMT
+     }
+  }
+  http://graphs.mikeal.couchone.com/#/graph/3bf46fdb22194aaefd6aa47f460333e2
 </pre>
 
-![graph](http://mikeal.couchone.com/graphs/c34d5d47f99e11be1f591832d00037e5/cropped.png "Sample Graph")
-
-A few notes about the graph. Lines don't start until the number of clients has ramped up to max level defined for the test, and this is across all recurrences of the same test run. This means that performance problems that might occur when you first being testing will not be visible.
+The graph server pages show a ton of info about the couchdb being tested and a couple different graphs that show information about the test run.
 
 # CouchDB Configuration
 
