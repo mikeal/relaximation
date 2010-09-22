@@ -53,7 +53,7 @@ exports.testWrites = function (options, cb) {
     }
     
     r.average = (r.average / r.timesCount);
-    if (!r.average && p.times.length === 50) console.log(sys.inspect(p)) 
+    // if (!r.average && p.times.length === 50) console.log(sys.inspect(p)) 
     p.starttimes.sort();
     r.oldest = p.starttimes[0];
     r.last = p.starttimes[p.starttimes.length - 1];

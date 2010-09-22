@@ -22,7 +22,7 @@ var createResponseTimeLines = function (results) {
       var r = result[i];
       if (r.clients) {
         if (r.last > r.average) {
-          r.average = r.lase;
+          r.average = r.last;
         } 
         var l = [r.timeline, r.average];
         l.r = r;

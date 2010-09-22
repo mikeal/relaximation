@@ -54,8 +54,8 @@ exports.createPool = function (options, callback) {
       pool.pools.push(opts);
       for (x in options) if (x !== 'client') opts[x] = options[x];
       var cb = function (error, resp, body) { 
-        opts.starttime = opts._starttime;
         opts.endtime = new Date();
+        opts.starttime = opts._starttime;
         opts.totalRequests += 1;
         if (opts.callback) opts.callback(error, opts, resp, body);
         if (pool.running) {

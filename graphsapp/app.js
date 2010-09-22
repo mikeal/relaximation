@@ -3,13 +3,15 @@ var couchapp = require('couchapp')
   ;
 
 ddoc = { _id:'_design/app2'
-  , rewrites : [
-        {from:"/", to:'index.html'}
-      , {from:"/api/*", to:'../../*'}
-      , {from:"/*", to:'*'}
-    ]
-  }
+       , rewrites : 
+         [ { from: "/",      to: 'index.html'}
+         , { from: "/api/*", to: '../../*'}
+         , { from: "/*",     to: '*'}
+         ] 
+       }
 
 couchapp.loadAttachments(ddoc, path.join(__dirname, 'attachments'))
 
 exports.app = ddoc
+
+ 
