@@ -218,9 +218,9 @@ app.showGraph = function (id) {
       $('div#info').append('<h2>'+capitalize(doc.name2)+
         ' Info</h2><div id="dbinfo"><span class="info-key">CouchDB version</span><span class="info-value">'+
         doc.info2.dbinfo.version+'</span><br></div><h3>'+
-        capitalize(doc.name2)+' Configuration</h3><div id="dbconfig1" />'
+        capitalize(doc.name2)+' Configuration</h3><div id="dbconfig2" />'
        );
-      addConfig($('div#dbconfig1'), doc.info2.dbconfig);
+      addConfig($('div#dbconfig2'), doc.info2.dbconfig);
     }
     
     
